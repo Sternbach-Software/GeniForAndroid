@@ -246,10 +246,10 @@ public class CompareActivity extends BaseActivity {
         if (cardId == R.id.compara_nuovo) {
             if (tree.grade == 30) {
                 card.setCardBackgroundColor(getResources().getColor(R.color.consumed));
-                title.setTextColor(getResources().getColor(R.color.grayText));
-                data.setTextColor(getResources().getColor(R.color.grayText));
+                title.setTextColor(getResources().getColor(R.color.gray_text));
+                data.setTextColor(getResources().getColor(R.color.gray_text));
             } else
-                card.setCardBackgroundColor(getResources().getColor(R.color.evidenziaMedio));
+                card.setCardBackgroundColor(getResources().getColor(R.color.accent_medium));
             Submitter submitter = gc.getSubmitter(tree.shares.get(tree.shares.size() - 1).submitter);
             StringBuilder txt = new StringBuilder();
             if (submitter != null) {

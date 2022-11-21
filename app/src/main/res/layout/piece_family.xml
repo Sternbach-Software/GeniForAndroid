@@ -9,12 +9,10 @@
 	app:cardUseCompatPadding="true"
 	app:contentPadding="7dp"
 	android:foreground="?android:attr/selectableItemBackground" >
-
 	<TextView
-		android:id="@+id/famiglia_testo"
+		android:id="@+id/family_text"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:singleLine="false"
 		android:textSize="15sp"/>
-
 </androidx.cardview.widget.CardView>

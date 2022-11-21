@@ -92,7 +92,7 @@ public class TreeInfoActivity extends BaseActivity {
             if (h == null) {
                 headerButton.setText(R.string.create_header);
                 headerButton.setOnClickListener(view -> {
-                    gc.setHeader(NewTree.createHeader(file.getName()));
+                    gc.setHeader(NewTreeActivity.createHeader(file.getName()));
                     U.saveJson(gc, treeId);
                     recreate();
                 });
@@ -253,7 +253,7 @@ public class TreeInfoActivity extends BaseActivity {
         if (putText) {
             ruler = new TableRow(getApplicationContext());
             View cell = new View(getApplicationContext());
-            cell.setBackgroundResource(R.color.primario);
+            cell.setBackgroundResource(R.color.primary);
             ruler.addView(cell);
             TableRow.LayoutParams param = (TableRow.LayoutParams) cell.getLayoutParams();
             param.weight = 1;

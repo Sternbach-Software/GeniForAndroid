@@ -35,7 +35,7 @@ public class Settings {
      */
     public int openTree;
     boolean autoSave;
-    boolean loadTree;
+    boolean loadTree; // At startup load last opened tree TODO rename to loadPreviouslyOpenedTree
     public boolean expert;
     boolean shareAgreement;
     Diagram diagram;
@@ -98,7 +98,7 @@ public class Settings {
     /**
      * The tree currently open
      */
-    Tree getCurrentTree() {
+   public Tree getCurrentTree() {
         for (Tree alb : trees) {
             if (alb.id == openTree)
                 return alb;
@@ -148,7 +148,7 @@ public class Settings {
         }
     }
 
-    static class Tree {
+   public static class Tree {
         int id;
         String title;
         Set<String> dirs;
@@ -156,7 +156,7 @@ public class Settings {
         int persons;
         int generations;
         int media;
-        String root;
+       public String root;
         /**
          * identification data of shares across time and space
          */

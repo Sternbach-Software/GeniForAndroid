@@ -8,24 +8,24 @@
 	android:background="?android:attr/selectableItemBackground" >
 
 	<TextView
-		android:id="@+id/biblioteca_id"
+		android:id="@+id/source_id"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_marginEnd="8dp"
 		android:textSize="15sp"
-		android:textColor="@color/grayText"/>
+		android:textColor="@color/gray_text"/>
 
 	<TextView
-		android:id="@+id/biblioteca_titolo"
+		android:id="@+id/source_title"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
 		android:layout_weight="1"/>
 
 	<TextView
-		android:id="@+id/biblioteca_volte"
+		android:id="@+id/source_num"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_marginStart="8dp"
 		android:textSize="15sp"
-		android:textColor="@color/grayText"/>
+		android:textColor="@color/gray_text"/>
 </LinearLayout>

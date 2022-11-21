@@ -39,8 +39,8 @@ public class GalleryFragment extends Fragment {
 	@Override
 	public View onCreateView( LayoutInflater inflater, ViewGroup container, Bundle bandolo ) {
 		setHasOptionsMenu( true );
-		View view = inflater.inflate( R.layout.galleria, container, false );
-		RecyclerView recyclerView = view.findViewById( R.id.galleria );
+		View view = inflater.inflate( R.layout.gallery, container, false );
+		RecyclerView recyclerView = view.findViewById( R.id.gallery_recycler );
 		recyclerView.setHasFixedSize( true );
 		if( gc != null ) {
 			mediaVisitor = new MediaListContainer( gc, !getActivity().getIntent().getBooleanExtra("galleriaScegliMedia",false ) );
@@ -51,7 +51,7 @@ public class GalleryFragment extends Fragment {
 			adapter = new MediaGalleryAdapter( mediaVisitor.mediaList, true );
 			recyclerView.setAdapter(adapter);
 			view.findViewById( R.id.fab ).setOnClickListener( v ->
-					F.displayImageCaptureDialog( getContext(), GalleryFragment.this, 4546, null )
+					F.displayMediaAppList( getContext(), GalleryFragment.this, 4546, null )
 			);
 		}
 		return view;

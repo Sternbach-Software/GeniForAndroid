@@ -39,9 +39,9 @@ import static app.familygem.Global.gc;
 
 /**
  * List of Sources (Sources)
- * Unlike {@link ChurchFragment} it uses an adapter for the RecyclerView
+ * Unlike {@link FamiliesFragment} it uses an adapter for the RecyclerView
  * */
-public class LibraryFragment extends Fragment {
+public class SourcesFragment extends Fragment {
 
 	private List<Source> listOfSources;
 	private LibraryAdapter adapter;
@@ -54,11 +54,11 @@ public class LibraryFragment extends Fragment {
 				getString(listOfSources.size()==1 ? R.string.source : R.string.sources).toLowerCase() );
 		if( listOfSources.size() > 1 )
 			setHasOptionsMenu(true);
-		View view = inflater.inflate(R.layout.biblioteca, container, false);
-		RecyclerView sources = view.findViewById( R.id.riciclatore );
+		View view = inflater.inflate(R.layout.sources, container, false);
+		RecyclerView sources = view.findViewById( R.id.sources_recycler );
 		adapter = new LibraryAdapter();
 		sources.setAdapter(adapter);
-		view.findViewById( R.id.fab ).setOnClickListener( v -> newSource( getContext(), null ) );
+		view.findViewById( R.id.fab ).setOnClickListener( v -> createNewSource( getContext(), null ) );
 		return view;
 	}
 
@@ -66,7 +66,7 @@ public class LibraryFragment extends Fragment {
 		@Override
 		public SourceViewHolder onCreateViewHolder(ViewGroup parent, int type ) {
 			View sourceView = LayoutInflater.from( parent.getContext() )
-					.inflate(R.layout.biblioteca_pezzo, parent, false);
+					.inflate(R.layout.source_item, parent, false);
 			registerForContextMenu( sourceView );
 			return new SourceViewHolder( sourceView );
 		}
@@ -125,9 +125,9 @@ public class LibraryFragment extends Fragment {
 		TextView times;
 		SourceViewHolder(View view ) {
 			super( view );
-			id = view.findViewById( R.id.biblioteca_id );
-			title = view.findViewById( R.id.biblioteca_titolo );
-			times = view.findViewById( R.id.biblioteca_volte );
+			id = view.findViewById( R.id.source_id );
+			title = view.findViewById( R.id.source_title );
+			times = view.findViewById( R.id.source_num );
 			view.setOnClickListener(this);
 		}
 		@Override
@@ -246,7 +246,7 @@ public class LibraryFragment extends Fragment {
 		}
 	}
 
-	static void newSource(Context context, Object container ){
+	static void createNewSource(Context context, Object container ){
 		Source source = new Source();
 		source.setId( U.newID( gc, Source.class ) );
 		source.setTitle( "" );
@@ -311,8 +311,8 @@ public class LibraryFragment extends Fragment {
 		subMenu.add(0, 3, 0, R.string.citations);
 
 		// Search in the Library
-		inflater.inflate(R.menu.cerca, menu);
-		final SearchView searchView = (SearchView)menu.findItem(R.id.ricerca).getActionView();
+		inflater.inflate(R.menu.search, menu);
+		final SearchView searchView = (SearchView)menu.findItem(R.id.search_item).getActionView();
 		searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 			@Override
 			public boolean onQueryTextChange(String query) {
@@ -347,7 +347,7 @@ public class LibraryFragment extends Fragment {
 	private Source source;
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View vista, ContextMenu.ContextMenuInfo info) {
-		source = gc.getSource(((TextView)vista.findViewById(R.id.biblioteca_id)).getText().toString());
+		source = gc.getSource(((TextView)vista.findViewById(R.id.source_id)).getText().toString());
 		if( Global.settings.expert )
 			menu.add(0, 0, 0, R.string.edit_id);
 		menu.add(0, 1, 0, R.string.delete);

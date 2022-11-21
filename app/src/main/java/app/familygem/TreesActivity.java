@@ -47,7 +47,7 @@ public class TreesActivity extends AppCompatActivity {
 
 	List<Map<String,String>> treeList;
 	SimpleAdapter adapter;
-	View wheel;
+	View wheel; //TODO rename to progress
 	SpeechBubble welcome;
 	Exporter exporter;
 	/**
@@ -62,11 +62,11 @@ public class TreesActivity extends AppCompatActivity {
 	@Override
 	protected void onCreate(Bundle savedState) {
 		super.onCreate(savedState);
-		setContentView(R.layout.alberi);
-		ListView listView = findViewById(R.id.lista_alberi);
-		wheel = findViewById(R.id.alberi_circolo);
+		setContentView(R.layout.trees);
+		ListView listView = findViewById(R.id.trees_list);
+		wheel = findViewById(R.id.trees_progress);
 		welcome = new SpeechBubble(this, R.string.tap_add_tree);
-		exporter = new Exporter(TreesActivity.this);
+		exporter = new Exporter(this);
 
 		// At the very first start
 		String referrer = Global.settings.referrer;
@@ -107,10 +107,10 @@ public class TreesActivity extends AppCompatActivity {
 					boolean derivative = tree.grade == 20;
 					boolean noNovelties = tree.grade == 30;
 					if( derivative ) {
-						treeView.setBackgroundColor(getResources().getColor(R.color.evidenziaMedio));
+						treeView.setBackgroundColor(getResources().getColor(R.color.accent_medium));
 						((TextView)treeView.findViewById(R.id.albero_dati)).setTextColor(getResources().getColor(R.color.text));
 						treeView.setOnClickListener(v -> {
-							if( !NewTree.compare(TreesActivity.this, tree, true) ) {
+							if( !NewTreeActivity.compare(TreesActivity.this, tree, true) ) {
 								tree.grade = 10; // is demoted
 								Global.settings.save();
 								updateList();
@@ -119,9 +119,9 @@ public class TreesActivity extends AppCompatActivity {
 						});
 					} else if( noNovelties ) {
 						treeView.setBackgroundColor(getResources().getColor(R.color.consumed));
-						((TextView)treeView.findViewById(R.id.albero_titolo)).setTextColor(getResources().getColor(R.color.grayText));
+						((TextView)treeView.findViewById(R.id.albero_titolo)).setTextColor(getResources().getColor(R.color.gray_text));
 						treeView.setOnClickListener(v -> {
-							if( !NewTree.compare(TreesActivity.this, tree, true) ) {
+							if( !NewTreeActivity.compare(TreesActivity.this, tree, true) ) {
 								tree.grade = 10; // is demoted
 								Global.settings.save();
 								updateList();
@@ -213,7 +213,7 @@ public class TreesActivity extends AppCompatActivity {
 										.putExtra("idAlbero", treeId)
 								);
 							} else if( id == 6 ) { // Compare with existing trees
-								if( NewTree.compare(TreesActivity.this, tree, false) ) {
+								if( NewTreeActivity.compare(TreesActivity.this, tree, false) ) {
 									tree.grade = 20;
 									updateList();
 								} else
@@ -254,9 +254,9 @@ public class TreesActivity extends AppCompatActivity {
 
 		// Custom bar
 		ActionBar toolbar = getSupportActionBar();
-		View treeToolbar = getLayoutInflater().inflate(R.layout.alberi_barra, null);
-		treeToolbar.findViewById(R.id.alberi_opzioni).setOnClickListener(v -> startActivity(
-				new Intent(TreesActivity.this, OptionsActivity.class))
+		View treeToolbar = getLayoutInflater().inflate(R.layout.trees_bar, null);
+		treeToolbar.findViewById(R.id.trees_settings).setOnClickListener(v -> startActivity(
+				new Intent(this, OptionsActivity.class))
 		);
 		toolbar.setCustomView(treeToolbar);
 		toolbar.setDisplayShowCustomEnabled(true);
@@ -264,7 +264,7 @@ public class TreesActivity extends AppCompatActivity {
 		// FAB
 		findViewById(R.id.fab).setOnClickListener(v -> {
 			welcome.hide();
-			startActivity(new Intent(TreesActivity.this, NewTree.class));
+			startActivity(new Intent(this, NewTreeActivity.class));
 		});
 
 		// Automatic load of last opened tree of previous session
@@ -512,8 +512,8 @@ public class TreesActivity extends AppCompatActivity {
 	}
 
 	@Override
-	public void onActivityResult( int requestCode, int resultCode, Intent data ) {
-		super.onActivityResult( requestCode, resultCode, data );
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
 		if( resultCode == AppCompatActivity.RESULT_OK ) {
 			Uri uri = data.getData();
 			boolean result = false;

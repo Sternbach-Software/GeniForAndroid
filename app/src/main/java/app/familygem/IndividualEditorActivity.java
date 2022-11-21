@@ -256,7 +256,7 @@ public class IndividualEditorActivity extends AppCompatActivity {
 				sex.setValue(chosenGender);
 				p.addEventFact(sex);
 			}
-			IndividualEventsFragment.updateMaritalRoles(p);
+			ProfileFactsFragment.updateMaritalRoles(p);
 		} else { // Remove existing sex tag
 			for( EventFact fact : p.getEventsFacts() ) {
 				if( fact.getTag().equals("SEX") ) {
@@ -371,7 +371,7 @@ public class IndividualEditorActivity extends AppCompatActivity {
 		else if( familyId != null ) {
 			pivotId = null; // pivot is already present in his family and should not be added again
 		}
-		Family family = familyId != null ? gc.getFamily(familyId) : ChurchFragment.newFamily(true);;
+		Family family = familyId != null ? gc.getFamily(familyId) : FamiliesFragment.newFamily(true);;
 		Person pivot = gc.getPerson( pivotId );
 		SpouseRef refSpouse1 = new SpouseRef(), refSposo2 = new SpouseRef();
 		ChildRef refChild1 = new ChildRef(), refFiglio2 = new ChildRef();

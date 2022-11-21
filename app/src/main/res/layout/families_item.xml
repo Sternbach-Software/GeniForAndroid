@@ -17,7 +17,7 @@
 			android:id="@+id/family_info"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:textColor="@color/grayText"
+			android:textColor="@color/gray_text"
 			android:textSize="14sp"/>
 		<LinearLayout
 			android:layout_width="match_parent"

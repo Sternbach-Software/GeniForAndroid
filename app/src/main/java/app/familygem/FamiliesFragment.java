@@ -28,7 +28,7 @@ import java.util.Set;
 import app.familygem.detail.FamilyActivity;
 import static app.familygem.Global.gc;
 
-public class ChurchFragment extends Fragment {
+public class FamiliesFragment extends Fragment {
 
 	private LinearLayout layout;
 	private List<FamilyWrapper> familyList;
@@ -37,8 +37,8 @@ public class ChurchFragment extends Fragment {
 	
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle bundle) {
-		View view = inflater.inflate(R.layout.magazzino, container, false);
-		layout = view.findViewById(R.id.magazzino_scatola);
+		View view = inflater.inflate(R.layout.scrollview, container, false);
+		layout = view.findViewById(R.id.scrollview_layout);
 		if( gc != null ) {
 			familyList = new ArrayList<>();
 			refresh(What.RELOAD);
@@ -57,7 +57,7 @@ public class ChurchFragment extends Fragment {
 	}
 
 	void placeFamily(LinearLayout layout, FamilyWrapper wrapper) {
-		View familyView = LayoutInflater.from(layout.getContext()).inflate(R.layout.pezzo_famiglia, layout, false);
+		View familyView = LayoutInflater.from(layout.getContext()).inflate(R.layout.piece_family, layout, false);
 		layout.addView(familyView);
 		TextView infoView = familyView.findViewById(R.id.family_info);
 		switch( order ) {

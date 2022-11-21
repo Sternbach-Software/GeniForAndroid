@@ -4,9 +4,8 @@
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
 	android:layout_marginTop="10dp">
-
 	<TextView
-		android:id="@+id/nota_testo"
+		android:id="@+id/note_text"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:background="@drawable/nota_sfondo"
@@ -14,13 +13,12 @@
 		android:paddingTop="6dp"
 		android:paddingRight="10dp"
 		android:paddingBottom="8dp"/>
-
 	<TextView
-		android:id="@+id/nota_fonti"
+		android:id="@+id/note_sources"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_alignParentBottom="true"
 		android:layout_alignParentEnd="true"
-		android:background="@color/citazioneFonte"
+		android:background="@color/source_citation"
 		android:padding="4dp"/>
 </RelativeLayout>

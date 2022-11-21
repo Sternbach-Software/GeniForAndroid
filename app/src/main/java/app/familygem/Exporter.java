@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.provider.OpenableColumns;
 
 import androidx.documentfile.provider.DocumentFile;
-
 import org.apache.commons.io.FileUtils;
 import org.folg.gedcom.model.Gedcom;
 import org.folg.gedcom.model.Header;
@@ -28,15 +27,17 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import app.familygem.visitor.MediaList;
-
+/**
+ * Utility class to export a tree as GEDCOM or ZIP backup
+ * */
 public class Exporter {
 
     private final Context context;
     private int treeId;
-    private Gedcom gc;
+    private Gedcom gc; //TODO rename to gedcom
     private Uri targetUri;
-    public String errorMessage;  // Message of any error
-    public String successMessage;// Message of the result obtained
+    public String errorMessage; // Message of possible error
+    public String successMessage;// Message of the obtained result
 
     Exporter(Context context) {
         this.context = context;
@@ -63,18 +64,18 @@ public class Exporter {
         updateHeader(extractFilename(targetUri));
         optimizeGedcom();
         GedcomWriter writer = new GedcomWriter();
-        File fileGc = new File(context.getCacheDir(), "temp.ged");
+        File gedcomFile = new File(context.getCacheDir(), "temp.ged");
         try {
-            writer.write(gc, fileGc);
+            writer.write(gc, gedcomFile);
             OutputStream out = context.getContentResolver().openOutputStream(targetUri);
-            FileUtils.copyFile(fileGc, out);
+            FileUtils.copyFile(gedcomFile, out);
             out.flush();
             out.close();
         } catch (Exception e) {
             return error(e.getLocalizedMessage());
         }
 
-		// Make the file visible from Windows // Rende il file visibile da Windows
+		// Make the file visible from Windows
 		// But it seems ineffective in KitKat where the file remains invisible // Ma pare inefficace in KitKat in cui il file rimane invisibile
         context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, targetUri));
         Global.gc = TreesActivity.readJson(treeId); // Reset the changes
@@ -202,7 +203,7 @@ public class Exporter {
     private void updateHeader(String gedcomFilename) {
         Header header = gc.getHeader();
         if (header == null)
-            gc.setHeader(NewTree.createHeader(gedcomFilename));
+            gc.setHeader(NewTreeActivity.createHeader(gedcomFilename));
         else {
             header.setFile(gedcomFilename);
             header.setDateTime(U.actualDateTime());

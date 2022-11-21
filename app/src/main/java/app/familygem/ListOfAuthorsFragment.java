@@ -29,13 +29,13 @@ public class ListOfAuthorsFragment extends Fragment {
 		((AppCompatActivity)getActivity()).getSupportActionBar().setTitle(authors.size() + " " +
 				getString(authors.size() == 1 ? R.string.submitter : R.string.submitters).toLowerCase());
 		setHasOptionsMenu(true);
-		View view = inflater.inflate(R.layout.magazzino, container, false);
-		LinearLayout layout = view.findViewById(R.id.magazzino_scatola);
+		View view = inflater.inflate(R.layout.scrollview, container, false);
+		LinearLayout layout = view.findViewById(R.id.scrollview_layout);
 		for( final Submitter author : authors ) {
-			View pieceView = inflater.inflate(R.layout.magazzino_pezzo, layout, false);
+			View pieceView = inflater.inflate(R.layout.scrollview_item, layout, false);
 			layout.addView(pieceView);
-			((TextView)pieceView.findViewById(R.id.magazzino_nome)).setText(TreeInfoActivity.submitterName(author));
-			pieceView.findViewById(R.id.magazzino_archivi).setVisibility(View.GONE);
+			((TextView)pieceView.findViewById(R.id.item_name)).setText(TreeInfoActivity.submitterName(author));
+			pieceView.findViewById(R.id.item_num).setVisibility(View.GONE);
 			pieceView.setOnClickListener(v -> {
 				Memory.setFirst(author);
 				startActivity(new Intent(getContext(), AuthorActivity.class));
@@ -82,10 +82,10 @@ public class ListOfAuthorsFragment extends Fragment {
 		return submitter;
 	}
 
-	static void mainAuthor(Submitter subm) {
+	static void setMainSubmitter(Submitter subm) {
 		Header testa = gc.getHeader();
 		if( testa == null ) {
-			testa = NewTree.createHeader(Global.settings.openTree + ".json");
+			testa = NewTreeActivity.createHeader(Global.settings.openTree + ".json");
 			gc.setHeader(testa);
 		}
 		testa.setSubmitterRef(subm.getId());
@@ -107,7 +107,7 @@ public class ListOfAuthorsFragment extends Fragment {
 	public boolean onContextItemSelected( MenuItem item ) {
 		switch( item.getItemId() ) {
 			case 0:
-				mainAuthor(subm);
+				setMainSubmitter(subm);
 				return true;
 			case 1:
 				// Todo confirm deletion

@@ -8,7 +8,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import org.folg.gedcom.model.RepositoryRef;
 import org.folg.gedcom.model.Source;
-import app.familygem.LibraryFragment;
+import app.familygem.SourcesFragment;
 import app.familygem.DetailActivity;
 import app.familygem.Memory;
 import app.familygem.R;
@@ -46,11 +46,11 @@ public class SourceActivity extends DetailActivity {
 		if( f.getRepositoryRef() != null ) {
 			View refView = LayoutInflater.from(this).inflate(R.layout.pezzo_citazione_fonte, box, false);
 			box.addView(refView);
-			refView.setBackgroundColor(getResources().getColor(R.color.archivioCitazione));
+			refView.setBackgroundColor(getResources().getColor(R.color.repository_citation));
 			final RepositoryRef repositoryRef = f.getRepositoryRef();
 			if( repositoryRef.getRepository(gc) != null ) {
 				((TextView)refView.findViewById(R.id.fonte_testo)).setText(repositoryRef.getRepository(gc).getName());
-				((CardView)refView.findViewById(R.id.citazione_fonte)).setCardBackgroundColor(getResources().getColor(R.color.archivio));
+				((CardView)refView.findViewById(R.id.citazione_fonte)).setCardBackgroundColor(getResources().getColor(R.color.repository));
 			} else refView.findViewById(R.id.citazione_fonte).setVisibility(View.GONE);
 			String t = "";
 			if( repositoryRef.getValue() != null ) t += repositoryRef.getValue() + "\n";
@@ -76,6 +76,6 @@ public class SourceActivity extends DetailActivity {
 
 	@Override
 	public void delete() {
-		U.updateChangeDate(LibraryFragment.deleteSource(f));
+		U.updateChangeDate(SourcesFragment.deleteSource(f));
 	}
 }

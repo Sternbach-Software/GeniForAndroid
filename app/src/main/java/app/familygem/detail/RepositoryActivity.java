@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import app.familygem.DetailActivity;
 import app.familygem.Global;
-import app.familygem.RepositoriesFragment;
 import app.familygem.R;
 import app.familygem.U;
+import app.familygem.list.RepositoriesFragment;
 
 public class RepositoryActivity extends DetailActivity {
 

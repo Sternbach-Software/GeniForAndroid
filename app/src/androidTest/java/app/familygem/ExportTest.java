@@ -142,7 +142,7 @@ public class ExportTest {
 		File fileGedcomZip = new File( documentsDir, "ਸੰਕੁਚਿਤ.zip" );
 		Exporter esp2 = new Exporter( appContext );
 		assertTrue( esp2.openTree( idAlbero ) );
-		boolean result = esp2.exportGedcomToZip(Uri.fromFile(fileGedcomZip));
+		boolean result = esp2.exportGedcomAsZip(Uri.fromFile(fileGedcomZip));
 		s.l( esp2.errorMessage);
 		assertTrue( result );
 		assertEquals( esp2.successMessage, appContext.getString(R.string.zip_exported_ok) );
@@ -158,7 +158,7 @@ public class ExportTest {
 		Exporter esp = new Exporter( appContext );
 		Settings.Tree ultimoAlb = Global.settings.trees.get(Global.settings.trees.size()-1);
 		assertTrue( esp.openTree( ultimoAlb.id ) );
-		boolean result = esp.exportBackupZip( null, -1, Uri.fromFile(fileBackup) );
+		boolean result = esp.exportZipBackup/*exportBackupZip*/( null, -1, Uri.fromFile(fileBackup) );
 		s.l( esp.errorMessage);
 		assertTrue( result );
 		assertEquals( esp.successMessage, appContext.getString(R.string.zip_exported_ok) );

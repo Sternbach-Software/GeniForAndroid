@@ -70,9 +70,9 @@ public class ImageActivity extends DetailActivity {
 		this.imageView.setOnClickListener(vista -> {
 			String path = (String)imageView.getTag(R.id.tag_percorso);
 			Uri uri = (Uri)imageView.getTag(R.id.tag_uri);
-			int fileType = (int)imageView.getTag(R.id.tag_tipo_file);
+			int fileType = (int)imageView.getTag(R.id.tag_file_type);
 			if( fileType == 0 ) {    // The file is to be found //Il file è da trovare
-				F.displayImageCaptureDialog(this, null, 5173, null);
+				F.displayMediaAppList(this, null, 5173, null);
 			} else if( fileType == 2 || fileType == 3 ) { // Open files with another app //Apre file con altra app
 				// TODO if the type is 3 but it is a url (web page without images) try to open it as a file: //
 				if( path != null ) {

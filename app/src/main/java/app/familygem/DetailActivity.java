@@ -58,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import app.familygem.constant.Choice;
 import app.familygem.detail.SourceCitationActivity;
 import app.familygem.detail.ExtensionActivity;
 import app.familygem.detail.EventActivity;
@@ -65,6 +66,8 @@ import app.familygem.detail.FamilyActivity;
 import app.familygem.detail.ImageActivity;
 import app.familygem.detail.AddressActivity;
 import app.familygem.detail.NoteActivity;
+import app.familygem.list.NotesFragment;
+import app.familygem.list.RepositoriesFragment;
 import app.familygem.visitor.FindStack;
 import static app.familygem.Global.gc;
 
@@ -110,7 +113,7 @@ public class DetailActivity extends AppCompatActivity {
 
 		FloatingActionButton fab = findViewById(R.id.fab);
 		fab.setOnClickListener(view -> {
-			PopupMenu popup = menuFAB(view);
+			PopupMenu popup = fabMenu(view);
 			popup.show();
 			popup.setOnMenuItemClickListener(item -> {
 				// FAB + puts a new egg and makes it immediately editable
@@ -148,7 +151,7 @@ public class DetailActivity extends AppCompatActivity {
 					RepositoriesFragment.newRepository(this, (Source)object);
 				} else if( id == 102 ) {
 					Intent intent = new Intent(this, Principal.class);
-					intent.putExtra("magazzinoScegliArchivio", true); //TODO translate
+					intent.putExtra(Choice.REPOSITORY, true);
 					startActivityForResult(intent, 4562);
 				} else if( id == 103 ) { // New note
 					Note note = new Note();
@@ -158,18 +161,18 @@ public class DetailActivity extends AppCompatActivity {
 					startActivity(new Intent(this, NoteActivity.class));
 					toBeSaved = true;
 				} else if( id == 104 ) { // New shared note
-					NotebookFragment.newNote(this, object);
+					NotesFragment.newNote(this, object);
 				} else if( id == 105 ) { // Link shared note
 					Intent intent = new Intent(this, Principal.class);
-					intent.putExtra("quadernoScegliNota", true); //TODO translate
+					intent.putExtra(Choice.NOTE, true);
 					startActivityForResult(intent, 7074);
 				} else if( id == 106 ) { // Search for local media
-					F.displayImageCaptureDialog(this, null, 4173, (MediaContainer)object);
+					F.displayMediaAppList(this, null, 4173, (MediaContainer)object);
 				} else if( id == 107 ) { // Search for shared media
-					F.displayImageCaptureDialog(this, null, 4174, (MediaContainer)object);
+					F.displayMediaAppList(this, null, 4174, (MediaContainer)object);
 				} else if( id == 108 ) { // Link shared media
 					Intent intent = new Intent(this, Principal.class);
-					intent.putExtra("galleriaScegliMedia", true); //TODO translate
+					intent.putExtra(Choice.MEDIA, true);
 					startActivityForResult(intent, 43616);
 				} else if( id == 109 ) { // New source citation //Nuova fonte-nota
 					SourceCitation citation = new SourceCitation();
@@ -180,10 +183,10 @@ public class DetailActivity extends AppCompatActivity {
 					startActivity(new Intent(this, SourceCitationActivity.class));
 					toBeSaved = true;
 				} else if( id == 110 ) {  // New source
-					LibraryFragment.newSource(this, object);
+					SourcesFragment.createNewSource(this, object);
 				} else if( id == 111 ) { // Link source
 					Intent intent = new Intent(this, Principal.class);
-					intent.putExtra("bibliotecaScegliFonte", true); //TODO translate
+					intent.putExtra(Choice.SOURCE, true);
 					startActivityForResult(intent, 5065);
 				} else if( id == 120 || id == 121 ) { // Create new family member
 					Intent intent = new Intent(this, IndividualEditorActivity.class);
@@ -193,7 +196,7 @@ public class DetailActivity extends AppCompatActivity {
 					startActivity(intent);
 				} else if( id == 122 || id == 123 ) { // Link existing person
 					Intent intent = new Intent(this, Principal.class);
-					intent.putExtra("anagrafeScegliParente", true); //TODO translate
+					intent.putExtra(Choice.PERSON, true);
 					intent.putExtra("relazione", id - 117);
 					startActivityForResult(intent, 34417);
 				} else if( id == 124 ) { // Put marriage - Metti matrimonio
@@ -227,15 +230,16 @@ public class DetailActivity extends AppCompatActivity {
 			});
 		});
 		// Menu test: if it is empty it hides the fab
-		if( !menuFAB(null).getMenu().hasVisibleItems() ) // todo ok?
+		// Todo If the FAB is hidden, deleting one piece the FAB should reappear
+		if( !fabMenu(null).getMenu().hasVisibleItems() )
 			fab.hide();
 	}
 
 	/**
 	 * FAB menu: only with methods that are not already present in the box
 	 * */
-	PopupMenu menuFAB(View view) {
-		PopupMenu popup = new PopupMenu(this, view);
+	PopupMenu fabMenu/*menuFAB*/(View fabView) {
+		PopupMenu popup = new PopupMenu(this, fabView);
 		Menu menu = popup.getMenu();
 		String[] withAddress = {"Www", "Email", "Phone", "Fax"}; // these objects appear in the Event FAB if an Address exists
 		int counter = 0;
@@ -324,19 +328,19 @@ public class DetailActivity extends AppCompatActivity {
 		super.onActivityResult(requestCode, resultCode, data);
 		if( resultCode == RESULT_OK ) {
 			// From the 'Connect/Link ...' submenu in FAB
-			if( requestCode == 34417 ) { // Family member chosen in the Registry
+			if( requestCode == 34417 ) { // Relative chosen from the ListOfPeopleFragment
 				Person personToBeAdded = gc.getPerson(data.getStringExtra("idParente")); //TODO translate
 				FamilyActivity.connect(personToBeAdded, (Family)object, data.getIntExtra("relazione", 0));
 				U.save(true, Memory.firstObject());
 				return;
-			} else if( requestCode == 5065 ) { // Source chosen in the Library
+			} else if( requestCode == 5065 ) { // Source selected in SourcesFragment
 				SourceCitation sourceCitation = new SourceCitation();
-				sourceCitation.setRef(data.getStringExtra("idFonte")); //TODO translate
+				sourceCitation.setRef(data.getStringExtra("sourceId"));
 				if( object instanceof Note ) ((Note)object).addSourceCitation(sourceCitation);
 				else ((SourceCitationContainer)object).addSourceCitation(sourceCitation);
 			} else if( requestCode == 7074 ) { // Shared note
 				NoteRef noteRef = new NoteRef();
-				noteRef.setRef(data.getStringExtra("idNota")); //TODO translate
+				noteRef.setRef(data.getStringExtra("noteId"));
 				((NoteContainer)object).addNoteRef(noteRef);
 			} else if( requestCode == 4173 ) { // File taken from file manager or other app becomes local media //File preso dal file manager o altra app diventa media locale
 				Media media = new Media();
@@ -352,13 +356,13 @@ public class DetailActivity extends AppCompatActivity {
 					U.save(false, media, Memory.firstObject());
 					return;
 				}
-			} else if( requestCode == 43616 ) { // Media from the Gallery
+			} else if( requestCode == 43616 ) { // Media from GalleryFragment
 				MediaRef mediaRef = new MediaRef();
-				mediaRef.setRef(data.getStringExtra("idMedia"));
+				mediaRef.setRef(data.getStringExtra("mediaId"));
 				((MediaContainer)object).addMediaRef(mediaRef);
 			} else if( requestCode == 4562 ) { // Repository selected in database (? lit. "Warehouse") from source //Archivio scelto in Magazzino da Fonte
 				RepositoryRef archRef = new RepositoryRef();
-				archRef.setRef(data.getStringExtra("idArchivio"));
+				archRef.setRef(data.getStringExtra("repoId"));
 				((Source)object).setRepositoryRef(archRef);
 			} else if( requestCode == 5173 ) { // Save in Media a file chosen with the apps from Image // Salva in Media un file scelto con le app da Immagine
 				if( F.proposeCropping(this, null, data, (Media)object) ) {
@@ -370,9 +374,9 @@ public class DetailActivity extends AppCompatActivity {
 			}
 			//  from the context menu 'Choose ...'
 			if( requestCode == 5390 ) { // Sets the archive that has been chosen in database (? lit. "Warehouse") from Repository Ref //Imposta l'archivio che è stato scelto in Magazzino da ArchivioRef
-				((RepositoryRef)object).setRef(data.getStringExtra("idArchivio"));
+				((RepositoryRef)object).setRef(data.getStringExtra("repoId"));
 			} else if( requestCode == 7047 ) { // Set the source that has been chosen in the Library by SourceCitation
-				((SourceCitation)object).setRef(data.getStringExtra("idFonte"));
+				((SourceCitation)object).setRef(data.getStringExtra("sourceId"));
 			}
 			U.save(true, Memory.firstObject());
 				// 'true' indicates to reload both this Detail thanks to the following onRestart (), and Individual or Family //'true' indica di ricaricare sia questo Dettaglio grazie al seguente onRestart(), sia Individuo o Famiglia
@@ -828,7 +832,7 @@ public class DetailActivity extends AppCompatActivity {
 					gc.getHeader().getSubmitter(gc) == null || !gc.getHeader().getSubmitter(gc).equals(object)) )
 				menu.add(0, 1, 0, R.string.make_default);
 			if( object instanceof Media ) {
-				if( box.findViewById(R.id.immagine_foto).getTag(R.id.tag_tipo_file).equals(1) )
+				if( box.findViewById(R.id.immagine_foto).getTag(R.id.tag_file_type).equals(1) )
 					menu.add(0, 2, 0, R.string.crop);
 				menu.add(0, 3, 0, R.string.choose_file);
 			}
@@ -846,21 +850,21 @@ public class DetailActivity extends AppCompatActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int id = item.getItemId();
 		if( id == 1 ) { // Main author //TODO code smell : magic number
-			ListOfAuthorsFragment.mainAuthor((Submitter)object);
+			ListOfAuthorsFragment.setMainSubmitter((Submitter)object);
 		} else if( id == 2 ) { // Image: crop
 			cropImage(box);
 		} else if( id == 3 ) { // Image: choose
-			F.displayImageCaptureDialog(this, null, 5173, null);
+			F.displayMediaAppList(this, null, 5173, null);
 		} else if( id == 4 ) { // Family
 			Family fam = (Family)object;
 			if( fam.getHusbandRefs().size() + fam.getWifeRefs().size() + fam.getChildRefs().size() > 0 ) {
 				new AlertDialog.Builder(this).setMessage(R.string.really_delete_family)
 						.setPositiveButton(android.R.string.yes, (dialog, i) -> {
-							ChurchFragment.deleteFamily(fam);
+							FamiliesFragment.deleteFamily(fam);
 							onBackPressed();
 						}).setNeutralButton(android.R.string.cancel, null).show();
 			} else {
-				ChurchFragment.deleteFamily(fam);
+				FamiliesFragment.deleteFamily(fam);
 				onBackPressed();
 			}
 		} else if( id == 5 ) { // All the others
@@ -957,7 +961,7 @@ public class DetailActivity extends AppCompatActivity {
 			} else if( pieceObject instanceof Integer ) {
 				if( pieceObject.equals(43614) ) { //Google translate: "Imagine it", probably Image// Immaginona
 					// it is a croppable image
-					if( pieceView.findViewById(R.id.immagine_foto).getTag(R.id.tag_tipo_file).equals(1) )
+					if( pieceView.findViewById(R.id.immagine_foto).getTag(R.id.tag_file_type).equals(1) )
 						menu.add(0, 100, 0, R.string.crop);
 					menu.add(0, 101, 0, R.string.choose_file);
 				} else if( pieceObject.equals(4043) || pieceObject.equals(6064) ) // Name and surname for inexperienced
@@ -994,7 +998,7 @@ public class DetailActivity extends AppCompatActivity {
 				return true;
 			case 11: // Person card? - Scheda persona
 				Memory.setFirst(person);
-				startActivity(new Intent(this, IndividualPersonActivity.class));
+				startActivity(new Intent(this, ProfileActivity.class));
 				return true;
 			case 12: // Family as? with? a son - Famiglia come figlio
 				U.askWhichParentsToShow(this, person, 2);
@@ -1037,7 +1041,7 @@ public class DetailActivity extends AppCompatActivity {
 						}).setNeutralButton(R.string.cancel, null).show();
 				return true;
 			case 20: // Nota
-				U.copyToClipboard(getText(R.string.note), ((TextView)pieceView.findViewById(R.id.nota_testo)).getText());
+				U.copyToClipboard(getText(R.string.note), ((TextView)pieceView.findViewById(R.id.note_text)).getText());
 				return true;
 			case 21:
 				U.disconnectNote((Note)pieceObject, object, null);
@@ -1088,9 +1092,9 @@ public class DetailActivity extends AppCompatActivity {
 			case 70: // Copy
 				U.copyToClipboard(getText(R.string.source), ((TextView)pieceView.findViewById(R.id.fonte_testo)).getText());
 				return true;
-			case 71: // Choose in the Library
+			case 71: // Choose in SourcesFragment
 				Intent inte = new Intent(this, Principal.class);
-				inte.putExtra("bibliotecaScegliFonte", true);
+				inte.putExtra(Choice.SOURCE, true);
 				startActivityForResult(inte, 7047);
 				return true;
 			// Citation repository
@@ -1107,16 +1111,16 @@ public class DetailActivity extends AppCompatActivity {
 			case 90: // Copy
 				U.copyToClipboard(getText(R.string.repository), ((TextView)pieceView.findViewById(R.id.fonte_testo)).getText());
 				return true;
-			case 91: // Choose in magazine?
+			case 91: // Choose in RepositoriesFragment?
 				Intent intn = new Intent(this, Principal.class);
-				intn.putExtra("magazzinoScegliArchivio", true);
+				intn.putExtra(Choice.REPOSITORY, true);
 				startActivityForResult(intn, 5390);
 				return true;
 			case 100: // Crop image
 				cropImage(pieceView);
 				return true;
 			case 101: // Choose image
-				F.displayImageCaptureDialog(this, null, 5173, null);
+				F.displayMediaAppList(this, null, 5173, null);
 				return true;
 			default:
 				return false;

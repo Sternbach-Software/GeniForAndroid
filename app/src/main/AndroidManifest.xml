@@ -59,7 +59,7 @@
 			android:name=".TreesActivity"
 			android:launchMode="singleTask" />
 		<activity
-			android:name=".NewTree"
+			android:name=".NewTreeActivity"
 			android:label="@string/new_tree"
 			android:parentActivityName=".TreesActivity" />
 		<activity
@@ -101,7 +101,7 @@
 			android:label="@string/diagram_settings"
 			android:parentActivityName=".Principal" />
 		<activity
-			android:name=".IndividualPersonActivity"
+			android:name=".ProfileActivity"
 			android:theme="@style/AppTheme.NoActionBar" />
 		<activity
 			android:name=".detail.FamilyActivity" />

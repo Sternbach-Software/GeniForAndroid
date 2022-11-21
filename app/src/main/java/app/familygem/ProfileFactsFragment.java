@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
-import androidx.fragment.app.FragmentManager;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -12,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import com.google.android.material.appbar.CollapsingToolbarLayout;
 import org.folg.gedcom.model.Address;
 import org.folg.gedcom.model.EventFact;
 import org.folg.gedcom.model.Family;
@@ -35,10 +33,9 @@ import app.familygem.detail.ExtensionActivity;
 import app.familygem.detail.NameActivity;
 import static app.familygem.Global.gc;
 
-public class IndividualEventsFragment extends Fragment {
+public class ProfileFactsFragment extends Fragment {
 
 	Person one;
-	private View changeView;
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -54,30 +51,15 @@ public class IndividualEventsFragment extends Fragment {
 					}
 					placeEvent(layout, title, U.firstAndLastName(name, " "), name);
 				}
-				for (EventFact fact : one.getEventsFacts() ) {
-					String txt = "";
-					if( fact.getValue() != null ) {
-						if( fact.getValue().equals("Y") && fact.getTag()!=null &&
-								( fact.getTag().equals("BIRT") || fact.getTag().equals("CHR") || fact.getTag().equals("DEAT") ) )
-							txt = getString(R.string.yes);
-						else txt = fact.getValue();
-						txt += "\n";
-					}
-					//if( fact.getType() != null ) txt += fact.getType() + "\n"; // Included in event title
-					if( fact.getDate() != null ) txt += new GedcomDateConverter(fact.getDate()).writeDateLong() + "\n";
-					if( fact.getPlace() != null ) txt += fact.getPlace() + "\n";
-					Address address = fact.getAddress();
-					if( address != null ) txt += DetailActivity.writeAddress(address, true) + "\n";
-					if( fact.getCause() != null ) txt += fact.getCause();
-					if( txt.endsWith("\n") ) txt = txt.substring(0, txt.length() - 1); // Remove the last newline
-					placeEvent(layout, writeEventTitle(fact), txt, fact);
+				for( EventFact fact : one.getEventsFacts() ) {
+					placeEvent(layout, writeEventTitle(fact), writeEventText(fact), fact);
 				}
 				for( Extension est : U.findExtensions(one) ) {
 					placeEvent(layout, est.name, est.text, est.gedcomTag);
 				}
 				U.placeNotes(layout, one, true);
 				U.placeSourceCitations(layout, one);
-				changeView = U.placeChangeDate(layout, one.getChange());
+				U.placeChangeDate(layout, one.getChange());
 			}
 		}
 		return eventsView;
@@ -125,6 +107,25 @@ public class IndividualEventsFragment extends Fragment {
 		if( event.getType() != null )
 			txt += " (" + event.getType() + ")";
 		return txt;
+	}
+
+	public static String writeEventText(EventFact event) {
+		String txt = "";
+
+		if( event.getValue() != null ) {
+			if( event.getValue().equals("Y") && event.getTag()!=null &&
+					( event.getTag().equals("BIRT") || event.getTag().equals("CHR") || event.getTag().equals("DEAT") ) )
+				txt = Global.context.getString(R.string.yes);
+			else txt = event.getValue();
+			txt += "\n";
+		}
+		//if( event.getType() != null ) txt += event.getType() + "\n"; // Included in event title
+		if( event.getDate() != null ) txt += new GedcomDateConverter(event.getDate()).writeDateLong() + "\n";
+		if( event.getPlace() != null ) txt += event.getPlace() + "\n";
+		Address address = event.getAddress();
+		if( address != null ) txt += DetailActivity.writeAddress(address, true) + "\n";
+		if( event.getCause() != null ) txt += event.getCause();
+		return txt.trim();
 	}
 
 	private int chosenSex;
@@ -190,7 +191,7 @@ public class IndividualEventsFragment extends Fragment {
 							((EventFact)object).setValue(new ArrayList<>(sexes.keySet()).get(item));
 							updateMaritalRoles(one);
 							dialog.dismiss();
-							refresh(1);
+							refresh();
 							U.save(true, one);
 						}).show());
 			} else { // All other events
@@ -274,7 +275,7 @@ public class IndividualEventsFragment extends Fragment {
 			menu.add(0, 220, 0, R.string.copy);
 			menu.add(0, 221, 0, R.string.delete);
 		} else if( pieceObject instanceof Note ) {
-			if( ((TextView)view.findViewById(R.id.nota_testo)).getText().length() > 0 )
+			if( ((TextView)view.findViewById(R.id.note_text)).getText().length() > 0 )
 				menu.add(0, 225, 0, R.string.copy);
 			if( ((Note)pieceObject).getId() != null )
 				menu.add(0, 226, 0, R.string.unlink);
@@ -303,7 +304,7 @@ public class IndividualEventsFragment extends Fragment {
 				names.remove(names.lastIndexOf(pieceObject));
 				toUpdateId = 2;
 				break;
-			case 202: // Sposta down
+			case 202: // Move down
 				names.add(names.indexOf(pieceObject) + 2, (Name)pieceObject);
 				names.remove(names.indexOf(pieceObject));
 				toUpdateId = 2;
@@ -336,9 +337,9 @@ public class IndividualEventsFragment extends Fragment {
 			case 221: // delete
 				U.deleteExtension((GedcomTag)pieceObject, one, pieceView);
 				break;
-			// Nota
+			// Note
 			case 225: // Copy
-				U.copyToClipboard(getText(R.string.note), ((TextView)pieceView.findViewById(R.id.nota_testo)).getText());
+				U.copyToClipboard(getText(R.string.note), ((TextView)pieceView.findViewById(R.id.note_text)).getText());
 				return true;
 			case 226: // disconnect
 				U.disconnectNote((Note)pieceObject, one, pieceView);
@@ -346,7 +347,7 @@ public class IndividualEventsFragment extends Fragment {
 			case 227:
 				Object[] heads = U.deleteNote((Note)pieceObject, pieceView);
 				U.save(true, heads);
-				refresh(0);
+				refresh();
 				return true;
 			// source Citation
 			case 230: // Copy
@@ -363,37 +364,15 @@ public class IndividualEventsFragment extends Fragment {
 			default:
 				return false;
 		}
+		refresh();
 		U.save(true, one);
-		refresh(toUpdateId);
 		return true;
 	}
 
 	/**
-	 * Update person ID in the toolbar and change date
-	 * */
-	void refreshId() {
-		TextView idView = getActivity().findViewById(R.id.persona_id);
-		idView.setText("INDI " + one.getId());
-		refresh(1);
-	}
-
-	/**
-	 * Update content of Facts tab
-	 * */
-	void refresh(int what) {
-		if( what == 0 ) { // Only replace change date
-			LinearLayout layout = getActivity().findViewById(R.id.contenuto_scheda);
-			if( changeView != null )
-				layout.removeView(changeView);
-			changeView = U.placeChangeDate(layout, one.getChange());
-		} else { // Reload the fragment
-			FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
-			fragmentManager.beginTransaction().detach(this).commit();
-			fragmentManager.beginTransaction().attach(this).commit();
-			if( what == 2 ) { // Also update person name in toolbar
-				CollapsingToolbarLayout toolbarLayout = requireActivity().findViewById(R.id.toolbar_layout);
-				toolbarLayout.setTitle(U.properName(one));
-			}
-		}
+	 * Update content
+	 */
+	void refresh() {
+		((ProfileActivity)requireActivity()).refresh();
 	}
 }

@@ -111,7 +111,7 @@ public class FacadeActivity extends AppCompatActivity {
                         fos.write(data, 0, count);
                     }
                     fos.close();
-                    if (client.completePendingCommand() && NewTree.unZip(context, zipPath, null)) {
+                    if (client.completePendingCommand() && NewTreeActivity.unZip(context, zipPath, null)) {
                         //If the tree was downloaded with the install referrer // Se l'albero è stato scaricato con l'install referrer
                         if (Global.settings.referrer != null && Global.settings.referrer.equals(idData)) {
                             Global.settings.referrer = null;

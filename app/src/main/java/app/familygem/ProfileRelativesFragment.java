@@ -22,7 +22,7 @@ import app.familygem.constant.Relation;
 import app.familygem.detail.FamilyActivity;
 import static app.familygem.Global.gc;
 
-public class IndividualFamilyFragment extends Fragment {
+public class ProfileRelativesFragment extends Fragment {
 
 	private View familyView;
 	Person person1;
@@ -94,7 +94,7 @@ public class IndividualFamilyFragment extends Fragment {
 		personView.setOnClickListener(v -> {
 			getActivity().finish(); // Removes the current activity from the stack
 			Memory.replaceFirst(person);
-			Intent intent = new Intent(getContext(), IndividualPersonActivity.class);
+			Intent intent = new Intent(getContext(), ProfileActivity.class);
 			intent.putExtra("scheda", 2); // apre la scheda famiglia
 			startActivity(intent);
 		});

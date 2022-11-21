@@ -1,3 +1,5 @@
+// Funzioni statiche per gestire file e media
+
 package app.familygem;
 
 import android.Manifest;
@@ -242,33 +244,34 @@ public class F {
      * // Receives a Person and chooses the main Media from which to get the image
      * // Riceve una Person e sceglie il Media principale da cui ricavare l'immagine
      */
-    static void showMainImageForPerson(Gedcom gc, Person p, ImageView img) {
+    static Media showMainImageForPerson(Gedcom gc, Person p, ImageView img) {
         MediaList mediaList = new MediaList(gc, 0);
         p.accept(mediaList);
-        boolean found = false;
-        for (Media med : mediaList.list) { // Look for a media marked Primary 'Y'
+		Media media = null;
+        for (Media med : mediaList.list) { // Look for a media with Primary 'Y'
             if (med.getPrimary() != null && med.getPrimary().equals("Y")) {
                 showImage(med, img, null);
-                found = true;
-                break;
+				media = med;
+				break;
             }
         }
-        if (!found) { // Alternatively, it returns the first one it finds
+        if (media == null) { // Alternatively, it returns the first one it finds
             for (Media med : mediaList.list) {
                 showImage(med, img, null);
-                found = true;
-                break;
+				media = med;
+				break;
             }
         }
-        img.setVisibility(found ? View.VISIBLE : View.GONE);
-    }
+        img.setVisibility(media != null ? View.VISIBLE : View.GONE);
+		return media;
+	}
 
     /**
      * Show pictures with Picasso
      */
     public static void showImage(Media media, ImageView imageView, ProgressBar progressBar) {
         int treeId;
-        // Comparator needs the new tree id to search its folder
+        // Comparator needs the new tree id to search through its folder
         View likely = null;
         if (imageView.getParent() != null && imageView.getParent().getParent() != null)
             likely = (View) imageView.getParent().getParent().getParent();
@@ -280,7 +283,7 @@ public class F {
         if (path == null)
             uri[0] = mediaUri(treeId, media);
         if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
-        imageView.setTag(R.id.tag_tipo_file, 0);
+        imageView.setTag(R.id.tag_file_type, 0);
         if (path != null || uri[0] != null) {
             RequestCreator creator;
             if (path != null)
@@ -294,7 +297,7 @@ public class F {
                         @Override
                         public void onSuccess() {
                             if (progressBar != null) progressBar.setVisibility(View.GONE);
-                            imageView.setTag(R.id.tag_tipo_file, 1);
+                            imageView.setTag(R.id.tag_file_type, 1);
                             imageView.setTag(R.id.tag_percorso, path); // 'path' or 'uri' one of the 2 is valid, the other is null
                             imageView.setTag(R.id.tag_uri, uri[0]);
                             // On the Image Detail page reload the options menu to show the Crop command
@@ -318,9 +321,9 @@ public class F {
                                 }
                             } catch (Exception excpt) {
                             }
-                            imageView.setTag(R.id.tag_tipo_file, 2);
+                            imageView.setTag(R.id.tag_file_type, 2);
                             if (bitmap == null) {
-                                // a Local File with no preview
+                                // A local file with no preview
                                 String format = media.getFormat();
                                 if (format == null)
                                     format = path != null ? MimeTypeMap.getFileExtensionFromUrl(path.replaceAll("[^a-zA-Z0-9./]", "_")) : "";
@@ -336,7 +339,7 @@ public class F {
                                     param.addRule(RelativeLayout.ABOVE, R.id.media_testo);
                                     imageView.setLayoutParams(param);
                                 }
-                                imageView.setTag(R.id.tag_tipo_file, 3);
+                                imageView.setTag(R.id.tag_file_type, 3);
                             }
                             imageView.setImageBitmap(bitmap);
                             imageView.setTag(R.id.tag_percorso, path);
@@ -352,7 +355,7 @@ public class F {
                         @Override
                         public void onSuccess() {
                             if (progressBar != null) progressBar.setVisibility(View.GONE);
-                            imageView.setTag(R.id.tag_tipo_file, 1);
+                            imageView.setTag(R.id.tag_file_type, 1);
                             try {
                                 new CacheImage(media).execute(new URL(filePath));
                             } catch (Exception e) {
@@ -591,7 +594,7 @@ public class F {
 
         @Override
         protected void onPostExecute(Bitmap bitmap) {
-            imageView.setTag(R.id.tag_tipo_file, fileTypeTag);
+            imageView.setTag(R.id.tag_file_type, fileTypeTag);
             if (bitmap != null) {
                 imageView.setImageBitmap(bitmap);
                 imageView.setTag(R.id.tag_percorso, url.toString());    // used by Image
@@ -606,9 +609,9 @@ public class F {
     // Methods for image acquisition:
 
     /**
-     * Offers a nice list of apps for capturing images
+     * Displays a list of apps for capturing images
      */
-    public static void displayImageCaptureDialog(Context context, Fragment fragment, int code, MediaContainer container) {
+    public static void displayMediaAppList(Context context, Fragment fragment, int code, MediaContainer container) {
         // Request permission to access device memory
         int perm = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE);
         if (perm == PackageManager.PERMISSION_DENIED) {
@@ -622,7 +625,7 @@ public class F {
         // Collect useful intents to capture images
         List<ResolveInfo> resolveInfos = new ArrayList<>();
         final List<Intent> intents = new ArrayList<>();
-        // Camera
+        // Cameras
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         for (ResolveInfo info : context.getPackageManager().queryIntentActivities(cameraIntent, 0)) {
             Intent finalIntent = new Intent(cameraIntent);
@@ -630,7 +633,7 @@ public class F {
             intents.add(finalIntent);
             resolveInfos.add(info);
         }
-        // Gallery
+        // Galleries
         Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
         galleryIntent.setType("image/*");
         String[] mimeTypes = {"image/*", "audio/*", "video/*", "application/*", "text/*"};
@@ -643,7 +646,7 @@ public class F {
             intents.add(finalIntent);
             resolveInfos.add(info);
         }
-        // Blank media
+        // Empty media
         if (Global.settings.expert && code != 5173) { //except for choosing files in Image // tranne che per la scelta di file in Immagine
             Intent intent = new Intent(context, ImageActivity.class);
             ResolveInfo info = context.getPackageManager().resolveActivity(intent, 0);
@@ -669,7 +672,7 @@ public class F {
                         intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
                     }
                     if (intent.getComponent().getPackageName().equals("app.familygem")) { //TODO extract to build property
-                        // Create a blank media
+                        // Create an empty media
                         Media med;
                         if (code == 4173 || code == 2173) { // Simple media
                             med = new Media();
@@ -691,17 +694,17 @@ public class F {
     }
 
     /**
-     * Closely related to the one above
+     * Closely related to the method above
      * */
     private static ArrayAdapter<ResolveInfo> createAdapter(final Context context, final List<ResolveInfo> resolveInfos) {
-        return new ArrayAdapter<ResolveInfo>(context, R.layout.pezzo_app, R.id.intent_titolo, resolveInfos) {
+        return new ArrayAdapter<ResolveInfo>(context, R.layout.piece_app, R.id.app_title, resolveInfos) {
             @Override
             public View getView(int position, View view1, ViewGroup parent) {
                 View view = super.getView(position, view1, parent);
                 ResolveInfo info = resolveInfos.get(position);
-                ImageView image = view.findViewById(R.id.intent_icona);
-                TextView textview = view.findViewById(R.id.intent_titolo);
-                if (info.activityInfo.packageName.equals("app.familygem")) {
+                ImageView image = view.findViewById(R.id.app_icon);
+                TextView textview = view.findViewById(R.id.app_title);
+                if (info.activityInfo.packageName.equals("app.familygem")) { //TODO replace with AUTHORITY constant
                     image.setImageResource(R.drawable.image);
                     textview.setText(R.string.empty_media);
                 } else {
@@ -797,9 +800,9 @@ public class F {
             ((GalleryFragment) fragment).recreate();
         else if (context instanceof DetailActivity)
             ((DetailActivity) context).refresh();
-        else if (context instanceof IndividualPersonActivity) {
-            IndividualMediaFragment indiMedia = (IndividualMediaFragment) ((AppCompatActivity) context).getSupportFragmentManager()
-                    .findFragmentByTag("android:switcher:" + R.id.schede_persona + ":0");
+        else if (context instanceof ProfileActivity) {
+            ProfileMediaFragment indiMedia = (ProfileMediaFragment) ((AppCompatActivity) context).getSupportFragmentManager()
+                    .findFragmentByTag("android:switcher:" + R.id.profile_pager + ":0");
             indiMedia.refresh();
         }
         Global.edited = true; // to refresh previous pages //per rinfrescare le pagine precedenti
@@ -877,7 +880,7 @@ public class F {
      */
     static void permissionsResult(Context context, Fragment fragment, int code, String[] permissions, int[] grantResults, MediaContainer container) {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            displayImageCaptureDialog(context, fragment, code, container);
+            displayMediaAppList(context, fragment, code, container);
         } else {
             String permission = permissions[0].substring(permissions[0].lastIndexOf('.') + 1);
             Toast.makeText(context, context.getString(R.string.not_granted, permission), Toast.LENGTH_LONG).show();

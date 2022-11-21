@@ -48,20 +48,20 @@ import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class NewTree extends BaseActivity {
+public class NewTreeActivity extends BaseActivity {
 
     View wheel;
 
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        setContentView(R.layout.albero_nuovo);
-        wheel = findViewById(R.id.nuovo_circolo);
+        setContentView(R.layout.new_tree);
+        wheel = findViewById(R.id.new_progress);
         String referrer = Global.settings.referrer; // Dataid from a share
         boolean existingDataId = referrer != null && referrer.matches("[0-9]{14}");
 
         // Download the shared tree
-        Button downloadShared = findViewById(R.id.bottone_scarica_condiviso);
+        Button downloadShared = findViewById(R.id.new_download_shared);
         if (existingDataId)
             // It doesn't need any permissions because it only downloads and unpacks to the app's external storage
             downloadShared.setOnClickListener(v -> FacadeActivity.downloadShared(this, referrer, wheel));
@@ -69,10 +69,10 @@ public class NewTree extends BaseActivity {
             downloadShared.setVisibility(View.GONE);
 
         // Create an empty tree
-        Button emptyTree = findViewById(R.id.bottone_albero_vuoto);
+        Button emptyTree = findViewById(R.id.new_empty_tree);
         if (existingDataId) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-                emptyTree.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.primarioChiaro)));
+                emptyTree.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.primary_light)));
         }
         emptyTree.setOnClickListener(v -> {
             View messageView = LayoutInflater.from(this).inflate(R.layout.albero_nomina, null);
@@ -98,11 +98,11 @@ public class NewTree extends BaseActivity {
             }, 300);
         });
 
-        Button downloadExample = findViewById(R.id.bottone_scarica_esempio);
+        Button downloadExample = findViewById(R.id.new_download_example);
         // It doesn't need permissions
         downloadExample.setOnClickListener(v -> downloadExample());
 
-        Button importGedcom = findViewById(R.id.bottone_importa_gedcom);
+        Button importGedcom = findViewById(R.id.new_import_gedcom);
         importGedcom.setOnClickListener(v -> {
             int perm = ContextCompat.checkSelfPermission(v.getContext(), Manifest.permission.READ_EXTERNAL_STORAGE);
             if (perm == PackageManager.PERMISSION_DENIED)
@@ -111,7 +111,7 @@ public class NewTree extends BaseActivity {
                 importGedcom();
         });
 
-        Button fetchBackup = findViewById(R.id.bottone_recupera_backup);
+        Button fetchBackup = findViewById(R.id.new_recover_backup);
         fetchBackup.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("application/zip");
@@ -165,7 +165,7 @@ public class NewTree extends BaseActivity {
         Cursor cursor = downloadManager.query(new DownloadManager.Query().setFilterByStatus(DownloadManager.STATUS_RUNNING));
         if (cursor.moveToFirst()) {
             cursor.close();
-            findViewById(R.id.bottone_scarica_esempio).setEnabled(false);
+            findViewById(R.id.new_download_example).setEnabled(false);
             return;
         }
         String url = "https://drive.google.com/uc?export=download&id=1FT-60avkxrHv6G62pxXs9S6Liv5WkkKf";
@@ -373,9 +373,9 @@ public class NewTree extends BaseActivity {
 						}}
 					 */
                 } else
-                    Toast.makeText(NewTree.this, R.string.backup_invalid, Toast.LENGTH_LONG).show();
+                    Toast.makeText(NewTreeActivity.this, R.string.backup_invalid, Toast.LENGTH_LONG).show();
             } catch (Exception e) {
-                Toast.makeText(NewTree.this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(NewTreeActivity.this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
             }
         }
     }

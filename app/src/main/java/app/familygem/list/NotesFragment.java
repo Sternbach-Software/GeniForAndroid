@@ -1,4 +1,4 @@
-package app.familygem;
+package app.familygem.list;
 
 import static app.familygem.Global.gc;
 import android.content.Context;
@@ -20,13 +20,18 @@ import org.folg.gedcom.model.NoteContainer;
 import org.folg.gedcom.model.NoteRef;
 import java.util.ArrayList;
 import java.util.List;
+
+import app.familygem.Memory;
+import app.familygem.R;
+import app.familygem.U;
+import app.familygem.constant.Choice;
 import app.familygem.detail.NoteActivity;
 import app.familygem.visitor.NoteList;
 import app.familygem.visitor.FindStack;
 
-public class NotebookFragment extends Fragment implements NotebookAdapter.ItemClickListener {
+public class NotesFragment extends Fragment implements NotesAdapter.ItemClickListener {
 
-	NotebookAdapter adapter;
+	NotesAdapter adapter;
 
 	public static List<Note> getAllNotes(boolean sharedOnly) {
 		// Shared notes
@@ -44,12 +49,12 @@ public class NotebookFragment extends Fragment implements NotebookAdapter.ItemCl
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle bandolo ) {
-		View view = inflater.inflate(R.layout.ricicla_vista, container, false);
-		RecyclerView recyclerView = view.findViewById(R.id.riciclatore);
+		View view = inflater.inflate(R.layout.recycler_view, container, false);
+		RecyclerView recyclerView = view.findViewById(R.id.recycler_view);
 		recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-		boolean sharedOnly = getActivity().getIntent().getBooleanExtra("quadernoScegliNota", false);
+		boolean sharedOnly = getActivity().getIntent().getBooleanExtra(Choice.NOTE, false);
 		List<Note> allNotes = getAllNotes(sharedOnly);
-		adapter = new NotebookAdapter(getContext(), allNotes, sharedOnly);
+		adapter = new NotesAdapter(getContext(), allNotes, sharedOnly);
 		adapter.setClickListener(this);
 		recyclerView.setAdapter(adapter);
 
@@ -67,16 +72,16 @@ public class NotebookFragment extends Fragment implements NotebookAdapter.ItemCl
 	@Override
 	public void onPause() {
 		super.onPause();
-		getActivity().getIntent().removeExtra("quadernoScegliNota");
+		getActivity().getIntent().removeExtra(Choice.NOTE);
 	}
 
 	@Override
 	public void onItemClick(View view, int position) {
 		Note note = adapter.getItem(position);
 		// Returns the id of a note to IndividualPersonActivity and DetailActivity
-		if( getActivity().getIntent().getBooleanExtra("quadernoScegliNota", false) ) {
+		if( getActivity().getIntent().getBooleanExtra(Choice.NOTE, false) ) {
 			Intent intent = new Intent();
-			intent.putExtra("idNota", note.getId());
+			intent.putExtra("noteId", note.getId());
 			getActivity().setResult(AppCompatActivity.RESULT_OK, intent);
 			getActivity().finish();
 		} else { // Opens the detail of the note
@@ -85,7 +90,7 @@ public class NotebookFragment extends Fragment implements NotebookAdapter.ItemCl
 				Memory.setFirst(note);
 			} else { // Simple note
 				new FindStack(gc, note);
-				intent.putExtra("daQuaderno", true);
+				intent.putExtra("fromNotes", true);
 			}
 			getContext().startActivity(intent);
 		}
@@ -106,8 +111,8 @@ public class NotebookFragment extends Fragment implements NotebookAdapter.ItemCl
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		// Search inside notes
-		inflater.inflate(R.menu.cerca, menu);
-		final SearchView searchView = (SearchView)menu.findItem(R.id.ricerca).getActionView();
+		inflater.inflate(R.menu.search, menu);
+		final SearchView searchView = (SearchView)menu.findItem(R.id.search_item).getActionView();
 		searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 			@Override
 			public boolean onQueryTextChange(String query) {
@@ -125,7 +130,7 @@ public class NotebookFragment extends Fragment implements NotebookAdapter.ItemCl
 	/**
 	 * Create a new shared note, attached to a container or unlinked
 	 * */
-	static void newNote(Context context, Object container) {
+	public static void newNote(Context context, Object container) {
 		Note note = new Note();
 		String id = U.newID(gc, Note.class);
 		note.setId(id);

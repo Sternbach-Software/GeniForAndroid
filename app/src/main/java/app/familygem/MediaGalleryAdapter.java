@@ -81,9 +81,9 @@ class MediaGalleryAdapter extends RecyclerView.Adapter<MediaGalleryAdapter.Media
 				view.setTag( R.id.tag_contenitore, container);
 				// Register context menu
 				final AppCompatActivity activity = (AppCompatActivity) view.getContext();
-				if( view.getContext() instanceof IndividualPersonActivity) { // IndividualMediaFragment
+				if( view.getContext() instanceof ProfileActivity) { // IndividualMediaFragment
 					activity.getSupportFragmentManager()
-							.findFragmentByTag( "android:switcher:" + R.id.schede_persona + ":0" )	// not guaranteed in the future
+							.findFragmentByTag( "android:switcher:" + R.id.profile_pager + ":0" )	// not guaranteed in the future
 							.registerForContextMenu(view);
 				} else if( view.getContext() instanceof Principal ) // GalleryFragment
 					activity.getSupportFragmentManager().findFragmentById( R.id.contenitore_fragment ).registerForContextMenu(view);
@@ -114,7 +114,7 @@ class MediaGalleryAdapter extends RecyclerView.Adapter<MediaGalleryAdapter.Media
 				Intent intent = new Intent( v.getContext(), ImageActivity.class );
 				if( media.getId() != null ) { // all Media records
 					Memory.setFirst( media );
-				} else if( (activity instanceof IndividualPersonActivity && container instanceof Person) // top tier media in indi
+				} else if( (activity instanceof ProfileActivity && container instanceof Person) // top tier media in indi
 						|| activity instanceof DetailActivity) { // normal opening in the DetailActivity
 					Memory.add( media );
 				} else { // from Gallery all the simple media, or from IndividualMediaFragment the media under multiple levels

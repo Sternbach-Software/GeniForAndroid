@@ -14,7 +14,7 @@ import app.familygem.constant.Kind;
  * */
 class GedcomDateConverter {
 
-	Data data1;
+	public Data data1;
 	Data data2;
 	String phrase; //The one that will go in parentheses // Quella che andrà tra parentesi
 	Kind kind;
@@ -24,7 +24,7 @@ class GedcomDateConverter {
 	/**
 	 * With a string date in GEDCOM style
 	 * */
-	GedcomDateConverter(String gedcomDate) {
+	public GedcomDateConverter(String gedcomDate) {
 		data1 = new Data();
 		data2 = new Data();
 		analyze(gedcomDate);
@@ -33,15 +33,15 @@ class GedcomDateConverter {
 	/**
 	 * With one single complete Date
 	 * */
-	GedcomDateConverter(Date date) {
+	public GedcomDateConverter(Date date) {
 		data1 = new Data();
 		data1.date = date;
 		data1.format.applyPattern(Format.D_M_Y);
 		kind = Kind.EXACT;
 	}
 
-	class Data {
-		Date date;
+	public class Data {
+		public Date date;
 		SimpleDateFormat format;
 		boolean negative;
 		boolean doubleYear;
@@ -113,7 +113,7 @@ class GedcomDateConverter {
 			}
 		}
 
-		boolean isFormat(String format) {
+		public boolean isFormat(String format) {
 			return this.format.toPattern().equals(format);
 		}
 
@@ -127,7 +127,7 @@ class GedcomDateConverter {
 	/**
 	 * It recognizes the type of data and creates the Data class
 	 * */
-	void analyze(String dataGc) {
+	public void analyze(String dataGc) {
 
 		// Reset the important values
 		kind = null;
@@ -296,7 +296,7 @@ class GedcomDateConverter {
 	/**
 	 * Kinds of date that represent a single event in time
 	 * */
-	boolean isSingleKind() {
+	public boolean isSingleKind() {
 		return kind == Kind.EXACT || kind == Kind.APPROXIMATE || kind == Kind.CALCULATED || kind == Kind.ESTIMATED;
 	}
 }

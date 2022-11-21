@@ -194,7 +194,7 @@ public class TreeComparatorActivity extends BaseActivity {
 			((TextView)changesView.findViewById(R.id.cambi_testo)).setText(data);
 
 		if( cardId == R.id.confronto_nuovo ) {
-			card.setCardBackgroundColor(getResources().getColor(R.color.evidenziaMedio));
+			card.setCardBackgroundColor(getResources().getColor(R.color.accent_medium));
 		}
 
 		if( tit.isEmpty() && txt.isEmpty() && data.isEmpty() ) // todo do you mean object null?

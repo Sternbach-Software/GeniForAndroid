@@ -32,7 +32,7 @@ public class NoteActivity extends DetailActivity {
 			NoteReferences noteRef = new NoteReferences(Global.gc, n.getId(), false);
 			if( noteRef.count > 0 )
 				U.putContainer(box, noteRef.founders.toArray(), R.string.shared_by);
-		} else if( ((Activity)box.getContext()).getIntent().getBooleanExtra("daQuaderno", false) ) {
+		} else if( ((Activity)box.getContext()).getIntent().getBooleanExtra("fromNotes", false) ) {
 			U.putContainer(box, Memory.firstObject(), R.string.written_in);
 		}
 	}

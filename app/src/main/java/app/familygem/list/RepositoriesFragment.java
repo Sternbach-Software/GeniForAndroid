@@ -1,4 +1,4 @@
-package app.familygem;
+package app.familygem.list;
 
 import android.app.Activity;
 import android.content.Context;
@@ -24,6 +24,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import app.familygem.Global;
+import app.familygem.Memory;
+import app.familygem.R;
+import app.familygem.U;
+import app.familygem.constant.Choice;
 import app.familygem.detail.RepositoryActivity;
 import static app.familygem.Global.gc;
 
@@ -31,11 +37,20 @@ import static app.familygem.Global.gc;
  * List of repositories
  * */
 public class RepositoriesFragment extends Fragment {
+	LinearLayout layout;
+	int order; // For sorting
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle bundle) {
-		View view = inflater.inflate(R.layout.magazzino, container, false);
-		LinearLayout layout = view.findViewById(R.id.magazzino_scatola);
+		View view = inflater.inflate(R.layout.scrollview, container, false);
+		layout = view.findViewById(R.id.scrollview_layout);
+		view.findViewById(R.id.fab).setOnClickListener(v -> newRepository(getContext(), null));
+		return view;
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
 		if( gc != null ) {
 			List<Repository> repos = gc.getRepositories();
 			((AppCompatActivity)getActivity()).getSupportActionBar().setTitle(repos.size() + " "
@@ -43,7 +58,7 @@ public class RepositoriesFragment extends Fragment {
 			if( repos.size() > 1 )
 				setHasOptionsMenu(true);
 			Collections.sort(repos, (r1, r2) -> {
-				switch( Global.repositoryOrder) {
+				switch( order) {
 					case 1: // Sort by id
 						return U.extractNum(r1.getId()) - U.extractNum(r2.getId());
 					case 2: // Sort alphabetically
@@ -54,15 +69,16 @@ public class RepositoriesFragment extends Fragment {
 						return 0;
 				}
 			});
+			layout.removeAllViews();
 			for( Repository repo : repos ) {
-				View repoView = inflater.inflate(R.layout.magazzino_pezzo, layout, false);
+				View repoView = getLayoutInflater().inflate(R.layout.scrollview_item, layout, false);
 				layout.addView(repoView);
-				((TextView)repoView.findViewById(R.id.magazzino_nome)).setText(repo.getName());
-				((TextView)repoView.findViewById(R.id.magazzino_archivi)).setText(String.valueOf(countSources(gc, repo)));
+				((TextView)repoView.findViewById(R.id.item_name)).setText(repo.getName());
+				((TextView)repoView.findViewById(R.id.item_num)).setText(String.valueOf(countSources(gc, repo)));
 				repoView.setOnClickListener(v -> {
-					if( getActivity().getIntent().getBooleanExtra("magazzinoScegliArchivio", false) ) {
+					if( getActivity().getIntent().getBooleanExtra(Choice.REPOSITORY, false) ) {
 						Intent intent = new Intent();
-						intent.putExtra("idArchivio", repo.getId());
+						intent.putExtra("repoId", repo.getId());
 						getActivity().setResult(Activity.RESULT_OK, intent);
 						getActivity().finish();
 					} else {
@@ -79,15 +95,13 @@ public class RepositoriesFragment extends Fragment {
 				if( repo.getExtensions().isEmpty() )
 					repo.setExtensions(null);
 			}
-			view.findViewById(R.id.fab).setOnClickListener(v -> newRepository(getContext(), null));
 		}
-		return view;
 	}
 
 	@Override
 	public void onPause() {
 		super.onPause();
-		getActivity().getIntent().removeExtra("magazzinoScegliArchivio");
+		getActivity().getIntent().removeExtra(Choice.REPOSITORY);
 	}
 
 	/**
@@ -107,7 +121,7 @@ public class RepositoriesFragment extends Fragment {
 	/**
 	 * Create a new repository, optionally linking a source to it
 	 */
-	static void newRepository(Context context, Source source) {
+	public static void newRepository(Context context, Source source) {
 		Repository repo = new Repository();
 		repo.setId(U.newID(gc, Repository.class));
 		repo.setName("");
@@ -152,21 +166,21 @@ public class RepositoriesFragment extends Fragment {
 		subMenu.add(0, 3, 0, R.string.sources_number);
 	}
 	@Override
-	public boolean onOptionsItemSelected( MenuItem item ) {
+	public boolean onOptionsItemSelected(MenuItem item) {
 		switch( item.getItemId() ) {
 			case 1:
-				Global.repositoryOrder = 1;
+				order = 1;
 				break;
 			case 2:
-				Global.repositoryOrder = 2;
+				order = 2;
 				break;
 			case 3:
-				Global.repositoryOrder = 3;
+				order = 3;
 				break;
 			default:
 				return false;
 		}
-		getFragmentManager().beginTransaction().replace(R.id.contenitore_fragment, new RepositoriesFragment()).commit();
+		onStart();
 		return true;
 	}
 

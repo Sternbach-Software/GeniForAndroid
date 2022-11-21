@@ -72,6 +72,7 @@ import org.folg.gedcom.model.SourceCitationContainer;
 import org.folg.gedcom.parser.JsonParser;
 import org.joda.time.Months;
 import org.joda.time.Years;
+
 import app.familygem.constant.Format;
 import app.familygem.constant.Gender;
 import app.familygem.detail.RepositoryRefActivity;
@@ -122,7 +123,7 @@ public class U {
 	 * @return the id of the initial Person of a Gedcom
 	 * Todo Integrate into {@link #getRootId(Gedcom, Settings.Tree)} ???
 	 */
-	static String findRoot(Gedcom gc) {
+	public static String findRoot(Gedcom gc) {
 		if( gc.getHeader() != null )
 			if( tagValue(gc.getHeader().getExtensions(), "_ROOT") != null )
 				return tagValue(gc.getHeader().getExtensions(), "_ROOT");
@@ -135,7 +136,7 @@ public class U {
 	 * receives a Person and returns string with primary first and last name
 	 * riceve una Person e restituisce stringa con nome e cognome principale
 	 * */
-	static String properName(Person person) {
+	public static String properName(Person person) {
 		return properName(person, false);
 	}
 	static String properName(Person person, boolean twoLines) {
@@ -176,7 +177,7 @@ public class U {
 	/**
 	 * receives a Person and returns the title of nobility
 	 */
-	static String title(Person p) {
+	public static String title(Person p) {
 		// GEDCOM standard INDI.TITL
 		for( EventFact ef : p.getEventsFacts() )
 			if( ef.getTag() != null && ef.getTag().equals("TITL") && ef.getValue() != null )
@@ -189,10 +190,11 @@ public class U {
 	}
 
 	/**
-	 * Returns the first and last name decorated with a Name
-	 * Restituisce il nome e cognome addobbato di un Name
-	 * */
-	static String firstAndLastName(Name n, String divider) {
+	 * @param n The Name of a person
+	 * @param divider Can be a space " " or a new line "\n"
+	 * @return The full, decorated name
+	 */
+	public static String firstAndLastName(Name n, String divider) {
 		String fullName = "";
 		if( n.getValue() != null ) {
 			String raw = n.getValue().trim();
@@ -227,28 +229,32 @@ public class U {
 	/**
 	 * Return the surname of a person, optionally lowercase for comparison. Can return null.
 	 */
-	static String surname(Person person) {
+	public static String surname(Person person) {
 		return surname(person, false);
 	}
-	static String surname(Person person, boolean lowerCase) {
+	public static String surname(Person person, boolean lowerCase) {
 		String surname = null;
 		if( !person.getNames().isEmpty() ) {
 			Name name = person.getNames().get(0);
 			String value = name.getValue();
 			if( value != null && value.lastIndexOf('/') - value.indexOf('/') > 1  ) //value.indexOf('/') < value.lastIndexOf('/')
-				surname = value.substring(value.indexOf('/') + 1, value.lastIndexOf('/'));
+				surname = value.substring(value.indexOf('/') + 1, value.lastIndexOf('/')).trim();
 			else if( name.getSurname() != null )
-				surname = name.getSurname();
+				surname = name.getSurname().trim();
 		}
-		if( lowerCase && surname != null )
-			surname = surname.toLowerCase();
+		if( surname != null ) {
+			if( surname.isEmpty() )
+				return null;
+			else if( lowerCase )
+				surname = surname.toLowerCase();
+		}
 		return surname;
 	}
 
 	/**
 	 * Receives a person and finds out if he is dead or buried
 	 */
-	static boolean isDead(Person person) {
+	public static boolean isDead(Person person) {
 		for( EventFact eventFact : person.getEventsFacts() ) {
 			if( eventFact.getTag().equals("DEAT") || eventFact.getTag().equals("BURI") )
 				return true;
@@ -453,10 +459,9 @@ public class U {
 	}
 
 	/**
-	 * Extracts only numbers from a string that can also contain letters
-	 * Estrae i soli numeri da una stringa che può contenere anche lettere
+	 * Extracts only digits from a string that can also contain letters
 	 * */
-	static int extractNum(String id) {
+	public static int extractNum(String id) {
 		//return Integer.parseInt( id.replaceAll("\\D+","") );	// synthetic but slow //sintetico ma lento
 		int num = 0;
 		int x = 1;
@@ -629,7 +634,7 @@ public class U {
 	 * Composes text with details of an individual and places it in text view
 	 * also returns the same text for {@link TreeComparatorActivity}
 	 * */
-	static String details(Person person, TextView detailsView) {
+	public static String details(Person person, TextView detailsView) {
 		String dates = twoDates(person, false);
 		String places = twoPlaces(person);
 		if( dates.isEmpty() && places == null && detailsView != null ) {
@@ -648,27 +653,27 @@ public class U {
 	}
 
 	public static View placeIndividual(LinearLayout layout, Person person, String role) {
-		View indiView = LayoutInflater.from(layout.getContext()).inflate(R.layout.pezzo_individuo, layout, false);
+		View indiView = LayoutInflater.from(layout.getContext()).inflate(R.layout.piece_person, layout, false);
 		layout.addView(indiView);
-		TextView roleView = indiView.findViewById(R.id.indi_ruolo);
+		TextView roleView = indiView.findViewById(R.id.person_info);
 		if( role == null ) roleView.setVisibility(View.GONE);
 		else roleView.setText(role);
-		TextView nameView = indiView.findViewById(R.id.indi_nome);
+		TextView nameView = indiView.findViewById(R.id.person_name);
 		String name = properName(person);
 		if( name.isEmpty() && role != null ) nameView.setVisibility(View.GONE);
 		else nameView.setText(name);
-		TextView titleView = indiView.findViewById(R.id.indi_titolo);
+		TextView titleView = indiView.findViewById(R.id.person_title);
 		String title = title(person);
 		if( title.isEmpty() ) titleView.setVisibility(View.GONE);
 		else titleView.setText(title);
-		details(person, indiView.findViewById(R.id.indi_dettagli));
-		F.showMainImageForPerson(Global.gc, person, indiView.findViewById(R.id.indi_foto));
+		details(person, indiView.findViewById(R.id.person_details));
+		F.showMainImageForPerson(Global.gc, person, indiView.findViewById(R.id.person_image));
 		if( !isDead(person) )
-			indiView.findViewById(R.id.indi_lutto).setVisibility(View.GONE);
+			indiView.findViewById(R.id.person_mourning).setVisibility(View.GONE);
 		if( Gender.isMale(person) )
-			indiView.findViewById(R.id.indi_bordo).setBackgroundResource(R.drawable.casella_bordo_maschio);
+			indiView.findViewById(R.id.person_border).setBackgroundResource(R.drawable.casella_bordo_maschio);
 		else if( Gender.isFemale(person) )
-			indiView.findViewById(R.id.indi_bordo).setBackgroundResource(R.drawable.casella_bordo_femmina);
+			indiView.findViewById(R.id.person_border).setBackgroundResource(R.drawable.casella_bordo_femmina);
 		indiView.setTag(person.getId());
 		return indiView;
 	}
@@ -687,21 +692,21 @@ public class U {
 	 */
 	static void placeNote(final LinearLayout layout, final Note note, boolean detailed) {
 		final Context context = layout.getContext();
-		View noteView = LayoutInflater.from(context).inflate(R.layout.pezzo_nota, layout, false);
+		View noteView = LayoutInflater.from(context).inflate(R.layout.piece_note, layout, false);
 		layout.addView(noteView);
-		TextView textView = noteView.findViewById(R.id.nota_testo);
+		TextView textView = noteView.findViewById(R.id.note_text);
 		textView.setText(note.getValue());
 		int sourceCiteNum = note.getSourceCitations().size();
-		TextView sourceCiteView = noteView.findViewById(R.id.nota_fonti);
+		TextView sourceCiteView = noteView.findViewById(R.id.note_sources);
 		if( sourceCiteNum > 0 && detailed ) sourceCiteView.setText(String.valueOf(sourceCiteNum));
 		else sourceCiteView.setVisibility(View.GONE);
 		textView.setEllipsize(TextUtils.TruncateAt.END);
 		if( detailed ) {
 			textView.setMaxLines(10);
 			noteView.setTag(R.id.tag_object, note);
-			if( context instanceof IndividualPersonActivity) { // IndividualEventsFragment
+			if( context instanceof ProfileActivity) { // IndividualEventsFragment
 				((AppCompatActivity)context).getSupportFragmentManager()
-						.findFragmentByTag("android:switcher:" + R.id.schede_persona + ":1") // not guaranteed in the future
+						.findFragmentByTag("android:switcher:" + R.id.profile_pager + ":1") // non garantito in futuro
 						.registerForContextMenu(noteView);
 			} else if( layout.getId() != R.id.dispensa_scatola ) // in AppCompatActivities except in the pantry (??)
 				((AppCompatActivity)context).registerForContextMenu(noteView);
@@ -788,7 +793,7 @@ public class U {
 				View citationView = LayoutInflater.from(layout.getContext()).inflate(R.layout.pezzo_citazione_fonte, layout, false);
 				layout.addView(citationView);
 				if( citation.getSource(Global.gc) != null ) // source CITATION
-					((TextView)citationView.findViewById(R.id.fonte_testo)).setText(LibraryFragment.sourceTitle(citation.getSource(Global.gc)));
+					((TextView)citationView.findViewById(R.id.fonte_testo)).setText(SourcesFragment.sourceTitle(citation.getSource(Global.gc)));
 				else // source NOTE, or Source citation that has been deleted
 					citationView.findViewById(R.id.citazione_fonte).setVisibility(View.GONE);
 				String t = "";
@@ -804,9 +809,9 @@ public class U {
 				placeNotes(otherLayout, citation, false);
 				placeMedia(otherLayout, citation, false);
 				citationView.setTag(R.id.tag_object, citation);
-				if( layout.getContext() instanceof IndividualPersonActivity) { // IndividualEventsFragment
+				if( layout.getContext() instanceof ProfileActivity) { // IndividualEventsFragment
 					((AppCompatActivity)layout.getContext()).getSupportFragmentManager()
-							.findFragmentByTag("android:switcher:" + R.id.schede_persona + ":1")
+							.findFragmentByTag("android:switcher:" + R.id.profile_pager + ":1")
 							.registerForContextMenu(citationView);
 				} else // AppCompatActivity
 					((AppCompatActivity)layout.getContext()).registerForContextMenu(citationView);
@@ -848,7 +853,7 @@ public class U {
 			((AppCompatActivity)layout.getContext()).registerForContextMenu(sourceView);
 		} else {
 			textView.setMaxLines(2);
-			txt = LibraryFragment.sourceTitle(source);
+			txt = SourcesFragment.sourceTitle(source);
 		}
 		textView.setText(txt);
 		sourceView.setOnClickListener(v -> {
@@ -877,7 +882,7 @@ public class U {
 			personView.findViewById(R.id.collega_bordo).setBackgroundResource(R.drawable.casella_bordo_femmina);
 		personView.setOnClickListener(v -> {
 			Memory.setFirst(p);
-			Intent intent = new Intent(layout.getContext(), IndividualPersonActivity.class);
+			Intent intent = new Intent(layout.getContext(), ProfileActivity.class);
 			intent.putExtra("scheda", card);
 			layout.getContext().startActivity(intent);
 		});
@@ -906,9 +911,9 @@ public class U {
 	 * Used by pantry (??)
 	 */
 	static void linkFamily(LinearLayout layout, Family fam) {
-		View familyView = LayoutInflater.from(layout.getContext()).inflate(R.layout.pezzo_famiglia_piccolo, layout, false);
+		View familyView = LayoutInflater.from(layout.getContext()).inflate(R.layout.piece_family, layout, false);
 		layout.addView(familyView);
-		((TextView)familyView.findViewById(R.id.famiglia_testo)).setText(familyText(layout.getContext(), Global.gc, fam, false));
+		((TextView)familyView.findViewById(R.id.family_text)).setText(familyText(layout.getContext(), Global.gc, fam, false));
 		familyView.setOnClickListener(v -> {
 			Memory.setFirst(fam);
 			layout.getContext().startActivity(new Intent(layout.getContext(), FamilyActivity.class));
@@ -936,11 +941,11 @@ public class U {
 	 */
 	static void linkSubmitter(LinearLayout layout, Submitter submitter) {
 		Context context = layout.getContext();
-		View view = LayoutInflater.from(context).inflate(R.layout.pezzo_nota, layout, false);
+		View view = LayoutInflater.from(context).inflate(R.layout.piece_note, layout, false);
 		layout.addView(view);
-		TextView noteText = view.findViewById(R.id.nota_testo);
+		TextView noteText = view.findViewById(R.id.note_text);
 		noteText.setText(submitter.getName());
-		view.findViewById(R.id.nota_fonti).setVisibility(View.GONE);
+		view.findViewById(R.id.note_sources).setVisibility(View.GONE);
 		view.setOnClickListener(v -> {
 			Memory.setFirst(submitter);
 			context.startActivity(new Intent(context, AuthorActivity.class));
@@ -987,8 +992,8 @@ public class U {
 	/**
 	 * Adds the piece with the change date and time to the layout
 	 */
-	public static View placeChangeDate(final LinearLayout layout, final Change change) {
-		View changeView = null;
+	public static void placeChangeDate(final LinearLayout layout, final Change change) {
+		View changeView;
 		if( change != null && Global.settings.expert ) {
 			changeView = LayoutInflater.from(layout.getContext()).inflate(R.layout.pezzo_data_cambiamenti, layout, false);
 			layout.addView(changeView);
@@ -1011,7 +1016,6 @@ public class U {
 				layout.getContext().startActivity(new Intent(layout.getContext(), ChangesActivity.class));
 			});
 		}
-		return changeView;
 	}
 
 	/**
@@ -1106,7 +1110,7 @@ public class U {
 		new Notifier(Global.context, gedcom, treeId, Notifier.What.DEFAULT);
 	}
 
-	static int castJsonInt(Object unknown) {
+	public static int castJsonInt(Object unknown) {
 		if( unknown instanceof Integer ) return (int)unknown;
 		else return ((JsonPrimitive)unknown).getAsInt();
 	}
@@ -1121,7 +1125,7 @@ public class U {
 		return pixels / Global.context.getResources().getDisplayMetrics().density;
 	}
 
-	static int dpToPx(float dips) {
+	public static int dpToPx(float dips) {
 		return (int)(dips * Global.context.getResources().getDisplayMetrics().density + 0.5f);
 	}
 
@@ -1147,7 +1151,7 @@ public class U {
 			new AlertDialog.Builder(context).setMessage(R.string.make_main_submitter)
 					.setPositiveButton(android.R.string.yes, (dialog, id) -> {
 						if( head[0] == null ) {
-							head[0] = NewTree.createHeader(Global.settings.openTree + ".json");
+							head[0] = NewTreeActivity.createHeader(Global.settings.openTree + ".json");
 							Global.gc.setHeader(head[0]);
 						}
 						head[0].setSubmitterRef(authorId);
@@ -1170,7 +1174,7 @@ public class U {
 	/**
 	 * Check if an author has participated in the shares, so as not to have them deleted
 	 * */
-	static boolean submitterHasShared(Submitter autore) {
+	public static boolean submitterHasShared(Submitter autore) {
 		List<Settings.Share> shares = Global.settings.getCurrentTree().shares;
 		boolean inviatore = false;
 		if( shares != null )
@@ -1371,7 +1375,7 @@ public class U {
 	 * Check that one or more families are empty and propose to eliminate them
 	 * @param evenRunWhenDismissing tells to execute 'whatToDo' even when clicking Cancel or out of the dialog
 	 */
-	static boolean checkFamilyItem(Context context, Runnable whatToDo, boolean evenRunWhenDismissing, Family... families) {
+	public static boolean checkFamilyItem(Context context, Runnable whatToDo, boolean evenRunWhenDismissing, Family... families) {
 		List<Family> items = new ArrayList<>();
 		for( Family fam : families ) {
 			int numMembers = fam.getHusbandRefs().size() + fam.getWifeRefs().size() + fam.getChildRefs().size();
@@ -1384,7 +1388,7 @@ public class U {
 			new AlertDialog.Builder(context).setMessage(R.string.empty_family_delete)
 					.setPositiveButton(android.R.string.yes, (dialog, i) -> {
 						for( Family fam : items )
-							ChurchFragment.deleteFamily(fam); // So it happens to save several times together ... but oh well
+							FamiliesFragment.deleteFamily(fam); // So it happens to save several times together ... but oh well
 						if( whatToDo != null ) whatToDo.run();
 					}).setNeutralButton(android.R.string.cancel, (dialog, i) -> {
 						if( evenRunWhenDismissing ) whatToDo.run();

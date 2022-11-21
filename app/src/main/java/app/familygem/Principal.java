@@ -24,6 +24,10 @@ import org.folg.gedcom.model.Media;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
+import app.familygem.constant.Choice;
+import app.familygem.list.NotesFragment;
+import app.familygem.list.RepositoriesFragment;
 import app.familygem.visitor.MediaList;
 import app.familygem.visitor.NoteList;
 import static app.familygem.Global.gc;
@@ -35,8 +39,8 @@ public class Principal /*TODO Main?*/extends AppCompatActivity implements Naviga
 	NavigationView mainMenu;
 	List<Integer> idMenu = Arrays.asList( R.id.nav_diagramma, R.id.nav_persone, R.id.nav_famiglie,
 			R.id.nav_media, R.id.nav_note, R.id.nav_fonti, R.id.nav_archivi, R.id.nav_autore );
-	List<Class> fragments = Arrays.asList( Diagram.class, ListOfPeopleFragment.class, ChurchFragment.class,
-			GalleryFragment.class, NotebookFragment.class, LibraryFragment.class, RepositoriesFragment.class, ListOfAuthorsFragment.class );
+	List<Class> fragments = Arrays.asList( Diagram.class, ListOfPeopleFragment.class, FamiliesFragment.class,
+			GalleryFragment.class, NotesFragment.class, SourcesFragment.class, RepositoriesFragment.class, ListOfAuthorsFragment.class );
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -61,15 +65,15 @@ public class Principal /*TODO Main?*/extends AppCompatActivity implements Naviga
 		if( savedInstanceState == null ) {  // loads the home only the first time, not after rotating the screen
 			Fragment fragment;
 			String backName = null; // Label to locate diagram in fragment backstack
-			if( getIntent().getBooleanExtra("anagrafeScegliParente",false) )
+			if( getIntent().getBooleanExtra(Choice.PERSON,false) )
 				fragment = new ListOfPeopleFragment();
-			else if( getIntent().getBooleanExtra("galleriaScegliMedia",false) )
+			else if( getIntent().getBooleanExtra(Choice.MEDIA,false) )
 				fragment = new GalleryFragment();
-			else if( getIntent().getBooleanExtra("bibliotecaScegliFonte",false) )
-				fragment = new LibraryFragment();
-			else if( getIntent().getBooleanExtra("quadernoScegliNota",false) )
-				fragment = new NotebookFragment();
-			else if( getIntent().getBooleanExtra("magazzinoScegliArchivio",false) )
+			else if( getIntent().getBooleanExtra(Choice.SOURCE,false) )
+				fragment = new SourcesFragment();
+			else if( getIntent().getBooleanExtra(Choice.NOTE,false) )
+				fragment = new NotesFragment();
+			else if( getIntent().getBooleanExtra(Choice.REPOSITORY,false) )
 				fragment = new RepositoriesFragment();
 			else { // normal opening
 				fragment = new Diagram();
@@ -114,24 +118,19 @@ public class Principal /*TODO Main?*/extends AppCompatActivity implements Naviga
 			if( fragment instanceof Diagram ) {
 				((Diagram)fragment).forceDraw = true; // So redraw the diagram
 			} else if( fragment instanceof ListOfPeopleFragment) {
-				// Update persons list
-				ListOfPeopleFragment listOfPeopleFragment = (ListOfPeopleFragment)fragment;
-				if( listOfPeopleFragment.people.size() == 0 ) // Probably it's a Collections.EmptyList
-					listOfPeopleFragment.people = gc.getPeople(); // replace it with the real ArrayList
-				listOfPeopleFragment.adapter.notifyDataSetChanged();
-				listOfPeopleFragment.setupToolbar();
-			} else if( fragment instanceof ChurchFragment) {
-				((ChurchFragment)fragment).refresh(ChurchFragment.What.RELOAD);
+				((ListOfPeopleFragment)fragment).restart();
+			} else if( fragment instanceof FamiliesFragment) {
+				((FamiliesFragment)fragment).refresh(FamiliesFragment.What.RELOAD);
 			} else if( fragment instanceof GalleryFragment) {
 				((GalleryFragment)fragment).recreate();
-			/*} else if( fragment instanceof NotebookFragment ) {
-				// Doesn't work to update NotebookFragment when a note is deleted
-				((NotebookFragment)fragment).adapter.notifyDataSetChanged();*/
+			/*} else if( fragment instanceof NotesFragment ) {
+				// Doesn't work to update NotesFragment when a note is deleted
+				((NotesFragment)fragment).adapter.notifyDataSetChanged();*/
 			} else {
 				recreate(); // questo dovrebbe andare a scomparire man mano
 			}
 			Global.edited = false;
-			setupMenu(); // basically just to show the save button
+			setupMenu(); // To display the Save button and update items count
 		}
 	}
 
@@ -208,24 +207,25 @@ public class Principal /*TODO Main?*/extends AppCompatActivity implements Naviga
 			Global.shouldSave = false;
 			Toast.makeText(this, R.string.saved, Toast.LENGTH_SHORT).show();
 		});
-		saveButton.setOnLongClickListener( vista -> {
-			PopupMenu popup = new PopupMenu(this, vista);
+		saveButton.setOnLongClickListener(view -> {
+			PopupMenu popup = new PopupMenu(this, view);
 			popup.getMenu().add(0, 0, 0, R.string.revert);
 			popup.show();
-			popup.setOnMenuItemClickListener( item -> {
+			popup.setOnMenuItemClickListener(item -> {
 				if( item.getItemId() == 0 ) {
 					TreesActivity.openGedcom(Global.settings.openTree, false);
 					U.askWhichParentsToShow(this, null, 0); // Simply reload the diagram
 					drawer.closeDrawer(GravityCompat.START);
-					saveButton.setVisibility(View.GONE);
+					//saveButton.setVisibility(View.GONE);
+					Global.edited = false;
 					Global.shouldSave = false;
+					setupMenu();
 				}
 				return true;
 			});
 			return true;
 		});
-		if( Global.shouldSave)
-			saveButton.setVisibility( View.VISIBLE );
+		saveButton.setVisibility(Global.shouldSave ? View.VISIBLE : View.GONE);
 	}
 
 	/**

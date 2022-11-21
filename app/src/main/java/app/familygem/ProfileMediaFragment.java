@@ -20,7 +20,7 @@ import static app.familygem.Global.gc;
 /**
  * Photo tab
  * */
-public class IndividualMediaFragment extends Fragment {
+public class ProfileMediaFragment extends Fragment {
 
 	Person person;
 	MediaListContainer mediaListContainer;
@@ -97,10 +97,10 @@ public class IndividualMediaFragment extends Fragment {
 		FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
 		fragmentManager.beginTransaction().detach(this).commit();
 		fragmentManager.beginTransaction().attach(this).commit();
-		F.showMainImageForPerson(Global.gc, person, requireActivity().findViewById(R.id.persona_foto));
-		F.showMainImageForPerson(Global.gc, person, requireActivity().findViewById(R.id.persona_sfondo));
+		F.showMainImageForPerson(Global.gc, person, requireActivity().findViewById(R.id.person_image));
+		F.showMainImageForPerson(Global.gc, person, requireActivity().findViewById(R.id.profile_background));
 		// Events tab
-		IndividualEventsFragment eventsTab = (IndividualEventsFragment)requireActivity().getSupportFragmentManager().findFragmentByTag("android:switcher:" + R.id.schede_persona + ":1");
-		eventsTab.refresh(1);
+		ProfileFactsFragment eventsTab = (ProfileFactsFragment)requireActivity().getSupportFragmentManager().findFragmentByTag("android:switcher:" + R.id.profile_pager + ":1");
+		eventsTab.refresh();
 	}
 }

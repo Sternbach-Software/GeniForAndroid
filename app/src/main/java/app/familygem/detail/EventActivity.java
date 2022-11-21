@@ -5,7 +5,7 @@ import org.folg.gedcom.model.Family;
 import org.folg.gedcom.model.PersonFamilyCommonContainer;
 import java.util.Arrays;
 import app.familygem.DetailActivity;
-import app.familygem.IndividualEventsFragment;
+import app.familygem.ProfileFactsFragment;
 import app.familygem.Memory;
 import app.familygem.R;
 import app.familygem.U;
@@ -26,7 +26,7 @@ public class EventActivity extends DetailActivity {
 		if( Memory.firstObject() instanceof Family )
 			setTitle(writeEventTitle((Family) Memory.firstObject(), e));
 		else
-			setTitle(IndividualEventsFragment.writeEventTitle(e)); // It includes e.getDisplayType()
+			setTitle(ProfileFactsFragment.writeEventTitle(e)); // It includes e.getDisplayType()
 		placeSlug(e.getTag());
 		if( Arrays.asList(eventTags).contains(e.getTag()) ) // is an event (without Value)
 			place(getString(R.string.value), "Value", false, true);

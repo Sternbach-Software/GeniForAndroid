@@ -47,7 +47,16 @@ public class Global extends MultiDexApplication {
     }
 
     public static void start(Context context) {
-        File settingsFile = new File(context.getFilesDir(), "settings.json");
+		// Handle all uncaught exceptions
+		Thread.setDefaultUncaughtExceptionHandler((thread, e) -> {
+			if( settings.loadTree ) {
+				settings.loadTree = false;
+				settings.save();
+			}
+			Toast.makeText(context, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+		});
+		// Settings
+		File settingsFile = new File(context.getFilesDir(), "settings.json");
         // Rename "preferenze.json" to "settings.json" (introduced in version 0.8)
         File preferencesFile = new File(context.getFilesDir(), "preferenze.json");
         if (preferencesFile.exists() && !settingsFile.exists()) {

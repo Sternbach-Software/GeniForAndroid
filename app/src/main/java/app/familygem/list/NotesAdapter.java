@@ -1,4 +1,4 @@
-package app.familygem;
+package app.familygem.list;
 
 import android.content.Context;
 import android.view.ContextMenu;
@@ -12,9 +12,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.folg.gedcom.model.Note;
 import java.util.Iterator;
 import java.util.List;
+import app.familygem.Global;
+import app.familygem.R;
 import app.familygem.visitor.NoteReferences;
 
-public class NotebookAdapter extends RecyclerView.Adapter<NotebookAdapter.ViewHolder> implements Filterable {
+public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.ViewHolder> implements Filterable {
 
 	List<Note> noteList;
 	private final LayoutInflater inflater;
@@ -22,7 +24,7 @@ public class NotebookAdapter extends RecyclerView.Adapter<NotebookAdapter.ViewHo
 	private ItemClickListener clickListener;
 	Note selectedNote;
 
-	NotebookAdapter(Context context, List<Note> data, boolean sharedOnly) {
+	NotesAdapter(Context context, List<Note> data, boolean sharedOnly) {
 		this.inflater = LayoutInflater.from(context);
 		this.noteList = data;
 		this.sharedOnly = sharedOnly;
@@ -30,7 +32,7 @@ public class NotebookAdapter extends RecyclerView.Adapter<NotebookAdapter.ViewHo
 
 	@Override
 	public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-		View view = inflater.inflate(R.layout.quaderno_pezzo, parent, false);
+		View view = inflater.inflate(R.layout.notes_item, parent, false);
 		return new ViewHolder(view);
 	}
 
@@ -59,7 +61,7 @@ public class NotebookAdapter extends RecyclerView.Adapter<NotebookAdapter.ViewHo
 			@Override
 			protected FilterResults performFiltering(CharSequence charSequence) {
 				String query = charSequence.toString();
-				noteList = NotebookFragment.getAllNotes(sharedOnly);
+				noteList = NotesFragment.getAllNotes(sharedOnly);
 				if( !query.isEmpty() ) {
 					Iterator<Note> noteIterator = noteList.iterator();
 					while( noteIterator.hasNext() ) {
@@ -86,8 +88,8 @@ public class NotebookAdapter extends RecyclerView.Adapter<NotebookAdapter.ViewHo
 
 		ViewHolder(View itemView) {
 			super(itemView);
-			textView = itemView.findViewById(R.id.nota_testo);
-			countView = itemView.findViewById(R.id.nota_citazioni);
+			textView = itemView.findViewById(R.id.note_text);
+			countView = itemView.findViewById(R.id.note_citations);
 			itemView.setOnClickListener(this);
 			itemView.setOnCreateContextMenuListener(this);
 		}

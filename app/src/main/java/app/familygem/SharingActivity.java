@@ -111,7 +111,7 @@ public class SharingActivity extends BaseActivity {
 					// Submitter update
 					Header header = gc.getHeader();
 					if( header == null ) {
-						header = NewTree.createHeader(tree.id + ".json");
+						header = NewTreeActivity.createHeader(tree.id + ".json");
 						gc.setHeader(header);
 					} else
 						header.setDateTime(U.actualDateTime());

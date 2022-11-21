@@ -34,7 +34,7 @@ import app.familygem.detail.NameActivity;
 import app.familygem.detail.NoteActivity;
 
 /**
- * Manage stacks of hierarchical objects for writing a breadcrumb trail in {@link DetailActivity}
+ * Manages stacks of hierarchical objects for writing a breadcrumb trail in {@link DetailActivity}
  * */
 public class Memory {
 
@@ -43,7 +43,7 @@ public class Memory {
 	List<StepStack> list = new ArrayList<>();
 
 	Memory() {
-		classes.put( Person.class, IndividualPersonActivity.class );
+		classes.put( Person.class, ProfileActivity.class );
 		classes.put( Repository.class, RepositoryActivity.class );
 		classes.put( RepositoryRef.class, RepositoryRefActivity.class );
 		classes.put( Submitter.class, AuthorActivity.class );
