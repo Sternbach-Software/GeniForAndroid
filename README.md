@@ -33,3 +33,8 @@ Here is a summary of what is being worked on, and a roadmap for what needs to be
  - [Tools to help keep trees on multiple platforms (e.g. Ancestry.com) in sync with Geni](../../discussions/5)
  - [Implement Geni discussions integration?](../../discussions/2)
  - [Implement Geni messaging integration?](../../discussions/4)
+
+## About
+Family Gem is written in Java within Eclipse and Android Studio.  
+Project started on beginning of 2018.  
+Author is Michele Salvador, an Italian programmer and genealogy enthusiast.
