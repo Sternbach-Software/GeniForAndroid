@@ -7,8 +7,9 @@ You can see the updates to the app as they happen by clicking [here](../../commi
 Here is a summary of what is being worked on, and a roadmap for what needs to be done:
 
 ### Being worked on
- - Translating code and documentation from Italian to English
-   - 10/30/2022: ~60% done 
+ ~- Translating code and documentation from Italian to English~
+   - 10/30/2022: ~60% done~
+   - 11/20/2022: *100%* done! :tada:
  - Minor improvements
  
 ### To-Do
