@@ -37,6 +37,11 @@ Here is a summary of what is being worked on, and a roadmap for what needs to be
  - [Tools to help keep trees on multiple platforms (e.g. Ancestry.com) in sync with Geni](../../discussions/5)
  - [Implement Geni discussions integration?](../../discussions/2)
  - [Implement Geni messaging integration?](../../discussions/4)
+ 
+ # Privacy policy
+ This is our privacy policy. We do not collect information. Period.
+ # Terms of service
+ No terms of service. Please forward questions to software.sternbach<at>gmail.com.
 
 ## About
 Family Gem is written in Java within Eclipse and Android Studio.  
