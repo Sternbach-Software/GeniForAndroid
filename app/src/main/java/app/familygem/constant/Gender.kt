@@ -1,42 +1,41 @@
-package app.familygem.constant;
+package app.familygem.constant
 
-import org.folg.gedcom.model.EventFact;
-import org.folg.gedcom.model.Person;
+import org.folg.gedcom.model.Person
 
-public enum Gender {
+enum class Gender {
+    NONE,  // No SEX tag
+    MALE,  // 'SEX M'
+    FEMALE,  // 'SEX F'
+    UNKNOWN,  // 'SEX U'
+    OTHER;
 
-	NONE, // No SEX tag
-	MALE, // 'SEX M'
-	FEMALE, // 'SEX F'
-	UNKNOWN, // 'SEX U'
-	OTHER; // Some other value
+    companion object {
+        // Some other value
+        /**
+         * Finds the gender of [person]
+         */
+		@JvmStatic
+		fun getGender(person: Person): Gender {
+            for (fact in person.eventsFacts) {
+                if (fact.tag == "SEX") {
+                    return if (fact.value == null) OTHER // There is 'SEX' tag but the value is empty
+                    else {
+                        when (fact.value) {
+                            "M" -> MALE
+                            "F" -> FEMALE
+                            "U" -> UNKNOWN
+                            else -> OTHER
+                        }
+                    }
+                }
+            }
+            return NONE // There is no 'SEX' tag
+        }
 
-	/**
-	 * Finds the gender of [person]
-	 * */
-	public static Gender getGender(Person person) {
-		for( EventFact fact : person.getEventsFacts() ) {
-			if( "SEX".equals(fact.getTag()) ) {
-				if( fact.getValue() == null )
-					return OTHER;  // There is 'SEX' tag but the value is empty
-				else {
-					switch( fact.getValue() ) {
-						case "M": return MALE;
-						case "F": return FEMALE;
-						case "U": return UNKNOWN;
-						default: return OTHER;
-					}
-				}
-			}
-		}
-		return NONE; // There is no 'SEX' tag
-	}
+        @JvmStatic
+		fun isMale(person: Person) = getGender(person) == MALE
 
-	public static boolean isMale(Person person) {
-		return getGender(person) == MALE;
-	}
-
-	public static boolean isFemale(Person person) {
-		return getGender(person) == FEMALE;
-	}
+        @JvmStatic
+		fun isFemale(person: Person) = getGender(person) == FEMALE
+    }
 }
