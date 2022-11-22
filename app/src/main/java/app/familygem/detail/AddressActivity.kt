@@ -7,7 +7,9 @@ import app.familygem.U
 import org.folg.gedcom.model.Address
 
 class AddressActivity : DetailActivity() {
+
     lateinit var a: Address
+
     override fun format() {
         setTitle(R.string.address)
         placeSlug("ADDR")
