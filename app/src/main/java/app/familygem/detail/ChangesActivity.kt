@@ -1,35 +1,30 @@
-package app.familygem.detail;
+package app.familygem.detail
 
-import android.view.Menu;
-import org.folg.gedcom.model.Change;
-import org.folg.gedcom.model.DateTime;
-import app.familygem.DetailActivity;
-import app.familygem.R;
-import app.familygem.U;
+import android.view.Menu
+import app.familygem.DetailActivity
+import app.familygem.R
+import app.familygem.U
+import org.folg.gedcom.model.Change
 
-public class ChangesActivity extends DetailActivity {
+class ChangesActivity : DetailActivity() {
 
-	Change c;
+    lateinit var c: Change
 
-	@Override
-	public void format() {
-		setTitle(R.string.change_date);
-		placeSlug("CHAN");
-		c = (Change)cast(Change.class);
-		DateTime dateTime = c.getDateTime();
-		if( dateTime != null ) {
-			if( dateTime.getValue() != null )
-				U.place(box, getString(R.string.value), dateTime.getValue());
-			if( dateTime.getTime() != null )
-				U.place(box, getString(R.string.time), dateTime.getTime());
-		}
-		placeExtensions(c);
-		U.placeNotes(box, c, true);
-	}
+    override fun format() {
+        setTitle(R.string.change_date)
+        placeSlug("CHAN")
+        c = cast(Change::class.java) as Change
+        val dateTime = c.dateTime
+        if (dateTime != null) {
+            if (dateTime.value != null) U.place(box, getString(R.string.value), dateTime.value)
+            if (dateTime.time != null) U.place(box, getString(R.string.time), dateTime.time)
+        }
+        placeExtensions(c)
+        U.placeNotes(box, c, true)
+    }
 
-	// You don't need a menu here
-	@Override
-	public boolean onCreateOptionsMenu(Menu m) {
-		return false;
-	}
+    // You don't need a menu here
+    override fun onCreateOptionsMenu(m: Menu): Boolean {
+        return false
+    }
 }
