@@ -318,7 +318,7 @@ public class PublisherDateLinearLayout extends LinearLayout {
 		else if( day != 0 && month != 0 )
 			data.format.applyPattern(Format.D_M);
 		else if( month != 0 && year != 100 )
-			data.format.applyPattern(Format.M_Y);
+			data.format.applyPattern(Format.MMM_Y);
 		else if( year != 100 )
 			data.format.applyPattern(Format.Y);
 		else

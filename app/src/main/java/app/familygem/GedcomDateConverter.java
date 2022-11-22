@@ -88,8 +88,8 @@ class GedcomDateConverter {
 			}
 			if( isFormat(Format.D_m_Y) )
 				format.applyPattern(Format.D_M_Y);
-			if( isFormat(Format.m_Y) )
-				format.applyPattern(Format.M_Y);
+			if( isFormat(Format.M_Y) )
+				format.applyPattern(Format.MMM_Y);
 
 			// Makes date effectively negative (for age calculation)
 			if(negative) changeEra();
@@ -216,7 +216,7 @@ class GedcomDateConverter {
 						} else if( !yearOnly && data1.isFormat(Format.D_M_Y) && data1.format.equals(data2.format)
 								&& dateOne.getYear() == dateTwo.getYear() ) { // Same year
 							text = text.substring(0, text.lastIndexOf(' '));
-						} else if( !yearOnly && data1.isFormat(Format.M_Y) && data1.format.equals(data2.format)
+						} else if( !yearOnly && data1.isFormat(Format.MMM_Y) && data1.format.equals(data2.format)
 								&& dateOne.getYear() == dateTwo.getYear() ) { // Same year
 							text = text.substring(0, text.indexOf(' '));
 						} else if( (yearOnly || (data1.isFormat(Format.Y) && data1.format.equals(data2.format))) // Two years only
@@ -254,7 +254,7 @@ class GedcomDateConverter {
 		if( data1.date != null ) {
 			txt += writePiece(data1);
 			// Uppercase initial
-			if( kind == Kind.EXACT && data1.isFormat(Format.M_Y) ) {
+			if( kind == Kind.EXACT && data1.isFormat(Format.MMM_Y) ) {
 				txt = txt.substring(0, 1).toUpperCase() + txt.substring(1);
 			}
 			if( kind == Kind.BETWEEN_AND || kind == Kind.FROM_TO ) {
