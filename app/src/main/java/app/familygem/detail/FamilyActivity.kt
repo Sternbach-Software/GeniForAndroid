@@ -225,10 +225,7 @@ class FamilyActivity : DetailActivity() {
                     //tizio.getSpouseFamilyRefs().add( sfr );	// no: with empty list UnsupportedOperationException //no: con lista vuota UnsupportedOperationException
                     //List<SpouseFamilyRef> listOfRefs = tizio.getSpouseFamilyRefs();	// That's no good://Non va bene:
                     // when the list is non-existent, instead of returning an ArrayList it returns a Collections$EmptyList which is IMMUTABLE i.e. it does not allow add ()
-                    val listOfRefs: MutableList<SpouseFamilyRef> =
-                        ArrayList(person.spouseFamilyRefs) // ok
-                    listOfRefs.add(sfr) // ok
-                    person.spouseFamilyRefs = listOfRefs
+                    person.spouseFamilyRefs = person.spouseFamilyRefs + sfr
                 }
                 6 -> {
                     val cr = ChildRef()
@@ -237,9 +234,7 @@ class FamilyActivity : DetailActivity() {
                     val pfr = ParentFamilyRef()
                     pfr.ref = fam.id
                     //tizio.getParentFamilyRefs().add( pfr );	// UnsupportedOperationException
-                    val listaPfr: MutableList<ParentFamilyRef> = ArrayList(person.parentFamilyRefs)
-                    listaPfr.add(pfr)
-                    person.parentFamilyRefs = listaPfr
+                    person.parentFamilyRefs = person.parentFamilyRefs + pfr
                 }
             }
         }
