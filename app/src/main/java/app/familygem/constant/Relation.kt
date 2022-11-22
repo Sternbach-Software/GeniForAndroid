@@ -1,5 +1,5 @@
-package app.familygem.constant;
+package app.familygem.constant
 
-public enum Relation {
-	PARENT, SIBLING, HALF_SIBLING, PARTNER, CHILD;
+enum class Relation {
+    PARENT, SIBLING, HALF_SIBLING, PARTNER, CHILD
 }
