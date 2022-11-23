@@ -1157,7 +1157,7 @@ public class DetailActivity extends AppCompatActivity {
 	private void cropImage(View view) {
 		ImageView imageView = view.findViewById(R.id.immagine_foto);
 		File mediaFile = null;
-		String path = (String)imageView.getTag(R.id.tag_percorso);
+		String path = (String)imageView.getTag(R.id.tag_path);
 		if( path != null )
 			mediaFile = new File(path);
 		Uri mediaUri = (Uri)imageView.getTag(R.id.tag_uri);

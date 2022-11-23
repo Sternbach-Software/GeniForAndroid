@@ -3,11 +3,9 @@ package app.familygem.detail
 import app.familygem.visitor.MediaReferences
 import android.app.Activity
 import android.view.LayoutInflater
-import android.widget.ProgressBar
 import android.os.Build
 import androidx.core.content.FileProvider
 import android.content.Intent
-import android.content.pm.ResolveInfo
 import android.net.Uri
 import android.os.StrictMode
 import android.view.View
@@ -75,8 +73,8 @@ class ImageActivity : DetailActivity() {
         box.addView(imageView, position)
         val subImageView = imageView.findViewById<ImageView>(R.id.immagine_foto) //TODO rename
         F.showImage(m, subImageView, imageView.findViewById(R.id.immagine_circolo))
-        imageView.setOnClickListener { vista: View? ->
-            val path = subImageView.getTag(R.id.tag_percorso) as String?
+        imageView.setOnClickListener { _: View? ->
+            val path = subImageView.getTag(R.id.tag_path) as String?
             var uri = subImageView.getTag(R.id.tag_uri) as Uri?
             when (subImageView.getTag(R.id.tag_file_type) as Int) {
                 0 -> {    // The file is to be found //Il file è da trovare
