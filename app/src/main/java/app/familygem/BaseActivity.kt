@@ -1,20 +1,20 @@
-package app.familygem;
+package app.familygem
 
-import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import java.lang.Exception
 
-public class BaseActivity extends AppCompatActivity {
+open class BaseActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-
-		// Renew activity title when in-app language is changed
-		try {
-			int label = getPackageManager().getActivityInfo(getComponentName(), 0).labelRes;
-			if( label != 0 ) {
-				setTitle(label);
-			}
-		} catch (Exception e) {}
-	}
+        // Renew activity title when in-app language is changed
+        try {
+            val label = packageManager.getActivityInfo(componentName, 0).labelRes
+            if (label != 0) { //TODO what does 0 mean?
+                setTitle(label)
+            }
+        } catch (e: Exception) {
+        }
+    }
 }
