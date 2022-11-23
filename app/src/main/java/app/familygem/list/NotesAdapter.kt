@@ -1,120 +1,91 @@
-package app.familygem.list;
+package app.familygem.list
 
-import android.content.Context;
-import android.view.ContextMenu;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Filter;
-import android.widget.Filterable;
-import android.widget.TextView;
-import androidx.recyclerview.widget.RecyclerView;
-import org.folg.gedcom.model.Note;
-import java.util.Iterator;
-import java.util.List;
-import app.familygem.Global;
-import app.familygem.R;
-import app.familygem.visitor.NoteReferences;
+import android.widget.Filterable
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import app.familygem.R
+import app.familygem.visitor.NoteReferences
+import android.widget.TextView
+import android.view.View
+import android.widget.Filter
+import androidx.recyclerview.widget.RecyclerView
+import app.familygem.Global
+import org.folg.gedcom.model.Note
+import java.util.*
 
-public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.ViewHolder> implements Filterable {
+class NotesAdapter(
+    initialList: List<Note>,
+    private val sharedOnly: Boolean,
+    val onClickListener: (Int) -> Unit
+) : RecyclerView.Adapter<NotesAdapter.ViewHolder>(), Filterable {
 
-	List<Note> noteList;
-	private final LayoutInflater inflater;
-	private final boolean sharedOnly;
-	private ItemClickListener clickListener;
-	Note selectedNote;
+    private val noteList = initialList.toMutableList()
+    lateinit var selectedNote: Note
 
-	NotesAdapter(Context context, List<Note> data, boolean sharedOnly) {
-		this.inflater = LayoutInflater.from(context);
-		this.noteList = data;
-		this.sharedOnly = sharedOnly;
-	}
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        return ViewHolder(
+            LayoutInflater.from(parent.context).inflate(R.layout.notes_item, parent, false)
+        )
+    }
 
-	@Override
-	public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-		View view = inflater.inflate(R.layout.notes_item, parent, false);
-		return new ViewHolder(view);
-	}
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val note = getItem(position)
+        if (note.id == null) holder.countView.visibility = View.GONE
+        else {
+            holder.countView.visibility = View.VISIBLE
+            holder.countView.text = NoteReferences(Global.gc, note.id, false).count.toString()
+        }
+        holder.itemView.tag = note // for the Delete context menu
+        holder.textView.text = note.value
+    }
 
-	@Override
-	public void onBindViewHolder(ViewHolder holder, int position) {
-		Note note = noteList.get(position);
-		if( note.getId() == null )
-			holder.countView.setVisibility(View.GONE);
-		else {
-			holder.countView.setVisibility(View.VISIBLE);
-			NoteReferences useCount = new NoteReferences(Global.gc, note.getId(), false);
-			holder.countView.setText(String.valueOf(useCount.count));
-		}
-		holder.itemView.setTag(note); // for the Delete context menu
-		holder.textView.setText(note.getValue());
-	}
+    override fun getItemCount(): Int = noteList.size
+    fun getItem(index: Int): Note = noteList[index]
 
-	@Override
-	public int getItemCount() {
-		return noteList.size();
-	}
+    override fun getFilter(): Filter {
+        return object : Filter() {
+            override fun performFiltering(charSequence: CharSequence): FilterResults {
+                val query = charSequence.toString()
+                noteList.clear()
+                noteList.addAll(NotesFragment.getAllNotes(sharedOnly))
+                if (query.isNotEmpty()) {
+                    val noteIterator = noteList.iterator()
+                    while (noteIterator.hasNext()) {
+                        val note = noteIterator.next()
+                        if (note.value == null || !note.value.lowercase(Locale.getDefault())
+                                .contains(
+                                    query.lowercase(
+                                        Locale.getDefault()
+                                    )
+                                )
+                        ) {
+                            noteIterator.remove()
+                        }
+                    }
+                }
+                val filterResults = FilterResults()
+                filterResults.values = noteList
+                return filterResults
+            }
 
-	@Override
-	public Filter getFilter() {
-		return new Filter() {
-			@Override
-			protected FilterResults performFiltering(CharSequence charSequence) {
-				String query = charSequence.toString();
-				noteList = NotesFragment.getAllNotes(sharedOnly);
-				if( !query.isEmpty() ) {
-					Iterator<Note> noteIterator = noteList.iterator();
-					while( noteIterator.hasNext() ) {
-						Note note = noteIterator.next();
-						if( note.getValue() == null || !note.getValue().toLowerCase().contains(query.toLowerCase()) ) {
-							noteIterator.remove();
-						}
-					}
-				}
-				FilterResults filterResults = new FilterResults();
-				filterResults.values = noteList;
-				return filterResults;
-			}
-			@Override
-			protected void publishResults(CharSequence cs, FilterResults fr) {
-				notifyDataSetChanged();
-			}
-		};
-	}
+            override fun publishResults(cs: CharSequence, fr: FilterResults) {
+                notifyDataSetChanged() //TODO refactor to ListAdapter
+            }
+        }
+    }
 
-	public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnCreateContextMenuListener {
-		TextView textView;
-		TextView countView;
+    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val textView: TextView = itemView.findViewById(R.id.note_text)
+        val countView: TextView = itemView.findViewById(R.id.note_citations)
 
-		ViewHolder(View itemView) {
-			super(itemView);
-			textView = itemView.findViewById(R.id.note_text);
-			countView = itemView.findViewById(R.id.note_citations);
-			itemView.setOnClickListener(this);
-			itemView.setOnCreateContextMenuListener(this);
-		}
-
-		@Override
-		public void onClick(View view) {
-			if( clickListener != null ) clickListener.onItemClick(view, getAdapterPosition());
-		}
-
-		@Override
-		public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-			selectedNote = (Note)v.getTag();
-			menu.add(0, 0, 0, R.string.delete);
-		}
-	}
-
-	Note getItem(int id) {
-		return noteList.get(id);
-	}
-
-	void setClickListener(ItemClickListener itemClickListener) {
-		this.clickListener = itemClickListener;
-	}
-
-	public interface ItemClickListener {
-		void onItemClick(View view, int position);
-	}
+        init {
+            itemView.setOnClickListener {
+                onClickListener(bindingAdapterPosition)
+            }
+            itemView.setOnCreateContextMenuListener { menu, v, _ ->
+                selectedNote = v.tag as Note
+                menu.add(0, 0, 0, R.string.delete)
+            }
+        }
+    }
 }
