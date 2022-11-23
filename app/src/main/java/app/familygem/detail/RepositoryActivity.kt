@@ -46,6 +46,6 @@ class RepositoryActivity : DetailActivity() {
     }
 
     override fun delete() {
-        U.updateChangeDate(*RepositoriesFragment.delete(a))
+        U.updateChangeDate(*RepositoriesFragment.delete(a).toTypedArray())
     }
 }
