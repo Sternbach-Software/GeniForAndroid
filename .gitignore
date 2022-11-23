@@ -4,5 +4,6 @@
 /app/build/
 /app/libs-source-data/
 /lab/build/
+/app/src/main/java/randomtests/
 chiavi.properties
 local.properties
