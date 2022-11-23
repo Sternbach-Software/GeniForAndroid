@@ -1,13 +1,13 @@
-package app.familygem.visitor;
+package app.familygem.visitor
 
-import org.folg.gedcom.model.Gedcom;
-import org.folg.gedcom.model.Note;
-import org.folg.gedcom.model.SourceCitation;
-import org.folg.gedcom.model.SourceCitationContainer;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import org.folg.gedcom.model.Gedcom
+import app.familygem.visitor.TotalVisitor
+import app.familygem.visitor.ListOfSourceCitations.Triplet
+import org.folg.gedcom.model.Note
+import org.folg.gedcom.model.SourceCitationContainer
+import org.folg.gedcom.model.SourceCitation
+import java.util.ArrayList
+import java.util.LinkedHashSet
 
 /**
  * // Starting from the id of a source it generates a list of triplets: parent / container / citations of the source
@@ -15,58 +15,58 @@ import java.util.Set;
  *
  * // Partendo dall'id di una fonte genera una lista di triplette: capostipite / contenitore / citazioni della fonte
  * // Usato da Biblioteca, da Fonte e da Conferma
- * */
-public class ListOfSourceCitations extends TotalVisitor {
+ */
+class ListOfSourceCitations(
+    gc: Gedcom, // id of the source
+    private val id: String
+) : TotalVisitor() {
+    val list = mutableListOf<Triplet>()
+    private var capo: Any? = null
 
-	public List<Triplet> list = new ArrayList<>();
-	private String id; // id of the source
-	private Object capo;
+    init {
+        gc.accept(this)
+    }
 
-	public ListOfSourceCitations(Gedcom gc, String id ) {
-		this.id = id;
-		gc.accept( this );
-	}
+    public override fun visit(obj: Any, isProgenitor: Boolean): Boolean {
+        if (isProgenitor) capo = obj
+        if (obj is SourceCitationContainer) {
+            analyze(obj, obj.sourceCitations)
+        } // Note does not extend SourceCitationContainer, but implements its own methods
+        else if (obj is Note) {
+            analyze(obj, obj.sourceCitations)
+        }
+        return true
+    }
 
-	@Override
-	boolean visit(Object obj, boolean isProgenitor) {
-		if(isProgenitor)
-			capo = obj;
-		if( obj instanceof SourceCitationContainer ) {
-			analyze(obj, ((SourceCitationContainer) obj).getSourceCitations() );
-		} // Note does not extend SourceCitationContainer, but implements its own methods
-		else if( obj instanceof Note ) {
-			analyze(obj, ((Note) obj).getSourceCitations() );
-		}
-		return true;
-	}
+    private fun analyze(container: Any, citations: List<SourceCitation>) {
+        for (citation in citations)  // (Known sources?)[SourceCitations?] have no Ref to a source //Le fonti-note non hanno Ref ad una fonte
+            if (citation.ref != null && citation.ref == id) {
+                val triplet = Triplet()
+                triplet.progenitor = capo
+                triplet.container = container
+                triplet.citation = citation
+                list.add(triplet)
+            }
+    }
 
-	private void analyze(Object container, List<SourceCitation> citations ) {
-		for( SourceCitation citation : citations )
-			// (Known sources?)[SourceCitations?] have no Ref to a source //Le fonti-note non hanno Ref ad una fonte
-			if( citation.getRef() != null && citation.getRef().equals(id) ) {
-				Triplet triplet = new Triplet();
-				triplet.progenitor = capo;
-				triplet.container = container;
-				triplet.citation = citation;
-				list.add( triplet );
-			}
-	}
+    // merge duplicates
+    val progenitors: Array<Any>
+        get() {
+            val heads: MutableSet<Any> = LinkedHashSet() // merge duplicates
+            for (tri in list) {
+                tri.progenitor?.let { heads.add(it) }
+            }
+            return heads.toTypedArray()
+        }
 
-	public Object[] getProgenitors() {
-		Set<Object> heads = new LinkedHashSet<>(); // merge duplicates
-		for( Triplet tri : list) {
-			heads.add(tri.progenitor);
-		}
-		return heads.toArray();
-	}
-
-	/**
-	 * Class for storing together the three parent elements - container - quote
-	 * Classe per stoccare insieme i tre elementi capostipite - contenitore - citazione
-	 * */
-	public static class Triplet {
-		public Object progenitor;
-		public Object container; // It would be a SourceCitationContainer but Note is an exception //Sarebbe un SourceCitationContainer ma Note fa eccezione
-		public SourceCitation citation;
-	}
+    /**
+     * Class for storing together the three parent elements - container - quote
+     * Classe per stoccare insieme i tre elementi capostipite - contenitore - citazione
+     */
+    class Triplet {
+        var progenitor: Any? = null
+        var container // It would be a SourceCitationContainer but Note is an exception //Sarebbe un SourceCitationContainer ma Note fa eccezione
+                : Any? = null
+        var citation: SourceCitation? = null
+    }
 }
