@@ -98,7 +98,7 @@ public class Memory {
 	 * */
 	public static Step add(Object object ) {
 		Step step = new Step();
-		step.object = object;
+		step.obj = object;
 		getStepStack().add(step);
 		//log("aggiungi");
 		return step;
@@ -125,7 +125,7 @@ public class Memory {
 	 * */
 	public static Object firstObject() {
 		if( getStepStack().size() > 0 )
-			return getStepStack().firstElement().object;
+			return getStepStack().firstElement().obj;
 		else
 			return null;
 	}
@@ -138,7 +138,7 @@ public class Memory {
 	public static Object getSecondToLastObject() {
 		StepStack stepStack = getStepStack();
 		if( stepStack.size() > 1 )
-			return stepStack.get( stepStack.size() - 2 ).object;
+			return stepStack.get( stepStack.size() - 2 ).obj;
 		else
 			return null;
 	}
@@ -150,7 +150,7 @@ public class Memory {
 		if( getStepStack().size() == 0 )
 			return null;
 		else
-			return getStepStack().peek().object;
+			return getStepStack().peek().obj;
 	}
 
 	static void clearStackAndRemove() { //lit. retreat
@@ -193,8 +193,8 @@ public class Memory {
 			* }
 			* */
 			for( Step step : stepStack) {
-				if( step.object != null && (step.object.equals(subject) || shouldSetSubsequentToNull) ) {
-					step.object = null;
+				if( step.obj != null && (step.obj.equals(subject) || shouldSetSubsequentToNull) ) {
+					step.obj = null;
 					shouldSetSubsequentToNull = true;
 				}
 			}
@@ -209,8 +209,8 @@ public class Memory {
 				String triplet = step.clearStackOnBackPressed ? "< " : "";
 				if( step.tag != null )
 					s.p( triplet + step.tag + " " );
-				else if( step.object != null )
-					s.p( triplet + step.object.getClass().getSimpleName() + " " );
+				else if( step.obj != null )
+					s.p( triplet + step.obj.getClass().getSimpleName() + " " );
 				else
 					s.p( triplet + "Null" ); // it happens in very rare cases
 			}
@@ -222,7 +222,7 @@ public class Memory {
 	static class StepStack extends Stack<Step> {}
 
 	public static class Step {
-		public Object object;
+		public Object obj;
 		public String tag;
 		public boolean clearStackOnBackPressed; // FindStack sets it to true then onBackPressed the stack must be deleted in bulk
 	}

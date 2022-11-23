@@ -420,10 +420,10 @@ public class DetailActivity extends AppCompatActivity {
 				View stepView = LayoutInflater.from(this).inflate(R.layout.pezzo_bava, box, false);
 				TextView stepText = stepView.findViewById(R.id.bava_goccia);
 				if( Memory.getStepStack().indexOf(step) < Memory.getStepStack().size() - 1 ) {
-					if( step.object instanceof Visitable ) // GedcomTag extensions are not Visitable and it is impossible to find the stack of them //le estensioni GedcomTag non sono Visitable ed è impossibile trovargli la pila
+					if( step.obj instanceof Visitable ) // GedcomTag extensions are not Visitable and it is impossible to find the stack of them //le estensioni GedcomTag non sono Visitable ed è impossibile trovargli la pila
 						stepView.setOnClickListener(v -> {
-							new FindStack(gc, step.object);
-							startActivity(new Intent(this, Memory.classes.get(step.object.getClass())));
+							new FindStack(gc, step.obj);
+							startActivity(new Intent(this, Memory.classes.get(step.obj.getClass())));
 						});
 				} else {
 					step.tag = tag;
