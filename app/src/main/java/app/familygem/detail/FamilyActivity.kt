@@ -242,6 +242,7 @@ class FamilyActivity : DetailActivity() {
         /**
          * Removes the single SpouseFamilyRef from the individual and the corresponding SpouseRef from the family
          */
+        @JvmStatic
         fun disconnect(sfr: SpouseFamilyRef, sr: SpouseRef) {
             // From person to family //Dalla persona alla famiglia
             val person = sr.getPerson(Global.gc)
