@@ -16,10 +16,10 @@ public class NoteList extends TotalVisitor {
 	public List<Note> noteList = new ArrayList<>();
 
 	@Override
-	boolean visit(Object object, boolean isProgenitor) {
-		if( object instanceof NoteContainer
-				&& !(!Global.settings.expert && (object instanceof Source || object instanceof Repository)) ) {
-			NoteContainer container = (NoteContainer)object;
+	boolean visit(Object obj, boolean isProgenitor) {
+		if( obj instanceof NoteContainer
+				&& !(!Global.settings.expert && (obj instanceof Source || obj instanceof Repository)) ) {
+			NoteContainer container = (NoteContainer) obj;
 			noteList.addAll(container.getNotes());
 		}
 		return true;

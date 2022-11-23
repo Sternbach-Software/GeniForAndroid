@@ -28,14 +28,14 @@ public class ListOfSourceCitations extends TotalVisitor {
 	}
 
 	@Override
-	boolean visit(Object object, boolean isProgenitor) {
+	boolean visit(Object obj, boolean isProgenitor) {
 		if(isProgenitor)
-			capo = object;
-		if( object instanceof SourceCitationContainer ) {
-			analyze( object, ((SourceCitationContainer)object).getSourceCitations() );
+			capo = obj;
+		if( obj instanceof SourceCitationContainer ) {
+			analyze(obj, ((SourceCitationContainer) obj).getSourceCitations() );
 		} // Note does not extend SourceCitationContainer, but implements its own methods
-		else if( object instanceof Note ) {
-			analyze( object, ((Note)object).getSourceCitations() );
+		else if( obj instanceof Note ) {
+			analyze(obj, ((Note) obj).getSourceCitations() );
 		}
 		return true;
 	}

@@ -25,7 +25,7 @@ public class TotalVisitor extends Visitor {
 		return visit( object, false );
 	}
 
-	boolean visit(Object object, boolean isProgenitor ) {
+	boolean visit(Object obj, boolean isProgenitor ) {
 		return true;
 	}
 

@@ -29,12 +29,12 @@ public class NoteContainers extends TotalVisitor {
 	}
 
 	@Override
-	boolean visit(Object object, boolean isProgenitor) {
-		if( object instanceof NoteContainer ) {
-			for( NoteRef noteRef : ((NoteContainer)object).getNoteRefs() ) {
+	boolean visit(Object obj, boolean isProgenitor) {
+		if( obj instanceof NoteContainer ) {
+			for( NoteRef noteRef : ((NoteContainer) obj).getNoteRefs() ) {
 				if( noteRef.getRef().equals(note.getId()) ) {
 					noteRef.setRef(newId);
-					containers.add((NoteContainer)object);
+					containers.add((NoteContainer) obj);
 				}
 			}
 		}

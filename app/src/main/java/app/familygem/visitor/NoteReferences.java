@@ -32,11 +32,11 @@ public class NoteReferences extends TotalVisitor {
 	}
 
 	@Override
-	boolean visit(Object object, boolean isProgenitor) {
+	boolean visit(Object obj, boolean isProgenitor) {
 		if(isProgenitor)
-			head = object;
-		if( object instanceof NoteContainer ) {
-			NoteContainer container = (NoteContainer) object;
+			head = obj;
+		if( obj instanceof NoteContainer ) {
+			NoteContainer container = (NoteContainer) obj;
 			Iterator<NoteRef> refs = container.getNoteRefs().iterator();
 			while( refs.hasNext() ) {
 				NoteRef nr = refs.next();

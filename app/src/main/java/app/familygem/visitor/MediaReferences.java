@@ -36,11 +36,11 @@ public class MediaReferences extends TotalVisitor {
 	}
 
 	@Override
-	boolean visit(Object object, boolean isProgenitor) {
+	boolean visit(Object obj, boolean isProgenitor) {
 		if(isProgenitor)
-			progenitor = object;
-		if( object instanceof MediaContainer ) {
-			MediaContainer container = (MediaContainer)object;
+			progenitor = obj;
+		if( obj instanceof MediaContainer ) {
+			MediaContainer container = (MediaContainer) obj;
 			Iterator<MediaRef> mediaRefs = container.getMediaRefs().iterator();
 			while( mediaRefs.hasNext() )
 				if( mediaRefs.next().getRef().equals(media.getId()) ) {
