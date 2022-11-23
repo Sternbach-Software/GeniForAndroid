@@ -1,24 +1,8 @@
-package app.familygem.visitor;
+package app.familygem.visitor
 
-import org.folg.gedcom.model.Change;
-import org.folg.gedcom.model.EventFact;
-import org.folg.gedcom.model.Family;
-import org.folg.gedcom.model.Gedcom;
-import org.folg.gedcom.model.Header;
-import org.folg.gedcom.model.Media;
-import org.folg.gedcom.model.Name;
-import org.folg.gedcom.model.Note;
-import org.folg.gedcom.model.Person;
-import org.folg.gedcom.model.Repository;
-import org.folg.gedcom.model.RepositoryRef;
-import org.folg.gedcom.model.Source;
-import org.folg.gedcom.model.SourceCitation;
-import org.folg.gedcom.model.Submitter;
-import org.folg.gedcom.model.Visitable;
-import org.folg.gedcom.model.Visitor;
-import java.util.Iterator;
-import java.util.List;
-import app.familygem.Memory;
+import app.familygem.Memory
+import org.folg.gedcom.model.*
+
 /**
  *
  * // Visitor that produces in Memory the hierarchical stack of objects between the parent record and a given object
@@ -28,97 +12,93 @@ import app.familygem.Memory;
  * // Visitatore che produce in Memoria la pila gerarchica degli oggetti tra il record capostipite e un object dato
  * // ad es. Person > Media semplice
  * // oppure Family > Note > SourceCitation > Note semplice
- * */
-public class FindStack extends Visitor {
+ */
+class FindStack(gc: Gedcom, scopo: Any) : Visitor() {
 
-	private List<Memory.Step> stack;
-	private Object scope;
-	private boolean found;
+    private val stack: MutableList<Memory.Step>
+    private val scope: Any
+    private var found = false
 
-	public FindStack(Gedcom gc, Object scopo ) {
-		stack = Memory.addStack(); //in a new stack on purpose
-		this.scope = scopo;
-		gc.accept( this );
-	}
+    init {
+        stack = Memory.addStack() //in a new stack on purpose
+        scope = scopo
+        gc.accept(this)
+    }
 
-	private boolean opera( Object object, String tag, boolean progenitor ) {
-		if( !found) {
-			if( progenitor )
-				stack.clear(); // every progenitor makes a stack start all over again
-			Memory.Step step = new Memory.Step();
-			step.object = object;
-			step.tag = tag;
-			if( !progenitor )
-				step.clearStackOnBackPressed = true; // onBackPressed marks them to delete them in bulk
-			stack.add(step);
-		}
-		if( object.equals(scope) ) {
-			Iterator<Memory.Step> steps = stack.iterator();
-			while( steps.hasNext() ) {
-				CleanStack janitor = new CleanStack(scope);
-				((Visitable)steps.next().object).accept( janitor );
-				if( janitor.toDelete)
-					steps.remove();
-			}
-			found = true;
-			//Memoria.stampa("FindStack"); log?
-		}
-		return true;
-	}
+    private fun opera(obj: Any, tag: String, progenitor: Boolean): Boolean {
+        if (!found) {
+            if (progenitor) stack.clear() // every progenitor makes a stack start all over again
+            val step = Memory.Step()
+            step.obj = obj
+            step.tag = tag
+            if (!progenitor) step.clearStackOnBackPressed =
+                true // onBackPressed marks them to delete them in bulk
+            stack.add(step)
+        }
+        if (obj == scope) {
+            val steps = stack.iterator()
+            while (steps.hasNext()) {
+                val janitor = CleanStack(scope)
+                (steps.next().obj as Visitable).accept(janitor)
+                if (janitor.toDelete) steps.remove()
+            }
+            found = true
+            //Memoria.stampa("FindStack"); log?
+        }
+        return true
+    }
 
-	@Override
-	public boolean visit( Header step ) {
-		return opera(step,"HEAD",true);
-	}
-	@Override
-	public boolean visit( Person step ) {
-		return opera(step,"INDI",true);
-	}
-	@Override
-	public boolean visit( Family step ) {
-		return opera(step,"FAM",true);
-	}
-	@Override
-	public boolean visit( Source step ) {
-		return opera(step,"SOUR",true);
-	}
-	@Override
-	public boolean visit( Repository step ) {
-		return opera(step,"REPO",true);
-	}
-	@Override
-	public boolean visit( Submitter step ) {
-		return opera(step,"SUBM",true);
-	}
-	@Override
-	public boolean visit( Media step ) {
-		return opera(step,"OBJE",step.getId()!=null);
-	}
-	@Override
-	public boolean visit( Note step ) {
-		return opera(step,"NOTE",step.getId()!=null);
-	}
-	@Override
-	public boolean visit( Name step ) {
-		return opera(step,"NAME",false);
-	}
-	@Override
-	public boolean visit( EventFact step ) {
-		return opera(step,step.getTag(),false);
-	}
-	@Override
-	public boolean visit( SourceCitation step ) {
-		return opera(step,"SOUR",false);
-	}
-	@Override
-	public boolean visit( RepositoryRef step ) {
-		return opera(step,"REPO",false);
-	}
-	@Override
-	public boolean visit( Change step ) {
-		return opera(step,"CHAN",false);
-	}
-	/* ok but then GedcomTag is not Visitable and therefore does not continue the visit
+    override fun visit(step: Header): Boolean {
+        return opera(step, "HEAD", true)
+    }
+
+    override fun visit(step: Person): Boolean {
+        return opera(step, "INDI", true)
+    }
+
+    override fun visit(step: Family): Boolean {
+        return opera(step, "FAM", true)
+    }
+
+    override fun visit(step: Source): Boolean {
+        return opera(step, "SOUR", true)
+    }
+
+    override fun visit(step: Repository): Boolean {
+        return opera(step, "REPO", true)
+    }
+
+    override fun visit(step: Submitter): Boolean {
+        return opera(step, "SUBM", true)
+    }
+
+    override fun visit(step: Media): Boolean {
+        return opera(step, "OBJE", step.id != null)
+    }
+
+    override fun visit(step: Note): Boolean {
+        return opera(step, "NOTE", step.id != null)
+    }
+
+    override fun visit(step: Name): Boolean {
+        return opera(step, "NAME", false)
+    }
+
+    override fun visit(step: EventFact): Boolean {
+        return opera(step, step.tag, false)
+    }
+
+    override fun visit(step: SourceCitation): Boolean {
+        return opera(step, "SOUR", false)
+    }
+
+    override fun visit(step: RepositoryRef): Boolean {
+        return opera(step, "REPO", false)
+    }
+
+    override fun visit(step: Change): Boolean {
+        return opera(step, "CHAN", false)
+    } /* ok but then GedcomTag is not Visitable and therefore does not continue the visit
 	@Override
 	public boolean visit( String chiave, Object estensioni ) {
 		if( chiave.equals("folg.more_tags") ) {
