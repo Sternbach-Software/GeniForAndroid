@@ -52,7 +52,7 @@ class ListOfSourceCitations(
     // merge duplicates
     val progenitors: Array<Any>
         get() {
-            val heads: MutableSet<Any> = LinkedHashSet() // merge duplicates
+            val heads: MutableSet<Any> = LinkedHashSet() // merge duplicates TODO why linked?
             for (tri in list) {
                 tri.progenitor?.let { heads.add(it) }
             }

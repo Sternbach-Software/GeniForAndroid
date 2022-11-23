@@ -269,8 +269,8 @@ public class SourcesFragment extends Fragment {
 	 *  */
 	public static Object[] deleteSource(Source source ) {
 		ListOfSourceCitations citations = new ListOfSourceCitations( gc, source.getId() );
-		for( ListOfSourceCitations.Triplet citation : citations.list) {
-			SourceCitation sc = citation.citation;
+		for( ListOfSourceCitations.Triplet citation : citations.getList()) {
+			SourceCitation sc = citation.getCitation();
 			sc.setRef( null );
 			// If the SourceCitation contains nothing else, it can be deleted
 			boolean deletable = true;
@@ -278,7 +278,7 @@ public class SourcesFragment extends Fragment {
 					|| !sc.getAllNotes(gc).isEmpty() || !sc.getAllMedia(gc).isEmpty() || !sc.getExtensions().isEmpty() )
 				deletable = false;
 			if( deletable ) {
-				Object container = citation.container;
+				Object container = citation.getContainer();
 				List<SourceCitation> list;
 				if( container instanceof Note )
 					list = ((Note)container).getSourceCitations();
