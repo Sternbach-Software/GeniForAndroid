@@ -42,7 +42,7 @@ class RepositoryRefActivity : DetailActivity() {
 
     override fun delete() {
         // Delete the citation from the archive and update the date of the source that contained it
-        val container = Memory.getSecondToLastObject() as Source
+        val container = Memory.secondToLastObject as Source
         container.repositoryRef = null
         U.updateChangeDate(container)
         Memory.setInstanceAndAllSubsequentToNull(r)

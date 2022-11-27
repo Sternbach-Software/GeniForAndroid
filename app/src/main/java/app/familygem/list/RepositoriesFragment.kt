@@ -41,7 +41,7 @@ class RepositoriesFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.scrollview, container, false)
         layout = view.findViewById(R.id.scrollview_layout)
-        view.findViewById<View>(R.id.fab).setOnClickListener { v: View? ->
+        view.findViewById<View>(R.id.fab).setOnClickListener {
             newRepository(
                 context, null
             )
@@ -67,7 +67,7 @@ class RepositoriesFragment : Fragment() {
                         Global.gc,
                         r1
                     )
-                    else -> 0 //TODO why should they all be equal if a sort order wasn't defined?? There should be an intentional default behavior
+                    else /*UNDEFINED_SORT_ORDER*/ -> 0 //TODO why should they all be equal if a sort order wasn't defined?? There should be an intentional default behavior
                 }
             }
             layout.removeAllViews()
@@ -83,7 +83,7 @@ class RepositoriesFragment : Fragment() {
                         ) == true
                     ) {
                         val intent = Intent()
-                        intent.putExtra("repoId", repo.id)
+                        intent.putExtra(REPO_ID_KEY, repo.id)
                         activity?.setResult(Activity.RESULT_OK, intent)
                         activity?.finish()
                     } else {
@@ -95,7 +95,7 @@ class RepositoriesFragment : Fragment() {
                 repoView.tag = repo
 
                 // Extension "fonti" is removed from version 0.9.1
-                if (repo.getExtension("fonti") != null) repo.putExtension("fonti", null)
+                if (repo.getExtension(SOURCE_EXTENSION_KEY) != null) repo.putExtension(SOURCE_EXTENSION_KEY, null)
                 if (repo.extensions.isEmpty()) repo.extensions = null
             }
         }

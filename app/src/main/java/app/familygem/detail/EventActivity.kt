@@ -8,7 +8,6 @@ import app.familygem.ProfileFactsFragment
 import app.familygem.R
 import app.familygem.U
 import org.folg.gedcom.model.PersonFamilyCommonContainer
-import java.util.*
 
 class EventActivity : DetailActivity() {
     lateinit var e: EventFact
@@ -52,7 +51,7 @@ class EventActivity : DetailActivity() {
 
     override fun format() {
         e = cast(EventFact::class.java) as EventFact
-        title = if (Memory.firstObject() is Family) writeEventTitle(
+        title = if (Memory.firstObject() is Family) getEventTitle(
             Memory.firstObject() as Family,
             e
         ) else ProfileFactsFragment.writeEventTitle(e) // It includes e.getDisplayType()
@@ -73,7 +72,7 @@ class EventActivity : DetailActivity() {
         place(getString(R.string.date), "Date")
         place(getString(R.string.place), "Place")
         place(getString(R.string.address), e.address)
-        if (e.tag != null && e.tag == "DEAT") place(
+        if (e.tag == "DEAT") place(
             getString(R.string.cause),
             "Cause"
         ) else place(getString(R.string.cause), "Cause", false, false)
@@ -91,8 +90,8 @@ class EventActivity : DetailActivity() {
     }
 
     override fun delete() {
-        (Memory.getSecondToLastObject() as PersonFamilyCommonContainer).eventsFacts.remove(e)
-        U.updateChangeDate(Memory.firstObject())
+        (Memory.secondToLastObject as PersonFamilyCommonContainer).eventsFacts.remove(e)
+        Memory.firstObject()?.let { U.updateChangeDate(it) }
         Memory.setInstanceAndAllSubsequentToNull(e)
     }
 

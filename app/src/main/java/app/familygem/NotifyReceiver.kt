@@ -1,45 +1,41 @@
-package app.familygem;
+package app.familygem
 
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
+import android.content.Intent
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import app.familygem.constant.intdefs.*
 
 /**
  * This BroadcastReceiver has a double function:
  * - Receive intent from Notifier to create notifications
  * - Receive ACTION_BOOT_COMPLETED after reboot to restore notifications saved in settings.json
  */
-public class NotifyReceiver extends BroadcastReceiver {
-
-	@Override
-	public void onReceive(Context context, Intent intent) {
-		// Set again alarms after reboot
-		if( Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) ) {
-
-			new Notifier(context, null, 0, Notifier.What.REBOOT);
-
-		} else { // Create notification
-
-			Intent notifyIntent = new Intent(context, TreesActivity.class)
-					.putExtra(Notifier.TREE_ID_KEY, intent.getIntExtra("treeId", 0))
-					.putExtra(Notifier.INDI_ID_KEY, intent.getStringExtra("indiId"))
-					.putExtra(Notifier.NOTIFY_ID_KEY, intent.getIntExtra("id", 1));
-			PendingIntent pendingIntent = PendingIntent.getActivity(context, intent.getIntExtra("id", 1),
-					notifyIntent, PendingIntent.FLAG_IMMUTABLE);
-
-			NotificationCompat.Builder builder = new NotificationCompat.Builder(context, Notifier.CHANNEL_ID)
-					.setSmallIcon(R.drawable.albero_cherokee)
-					.setContentTitle(intent.getStringExtra("title"))
-					.setContentText(intent.getStringExtra("text"))
-					.setContentIntent(pendingIntent)
-					.setAutoCancel(true)
-					.setCategory(NotificationCompat.CATEGORY_EVENT);
-
-			NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-			notificationManager.notify(intent.getIntExtra("id", 1), builder.build());
-		}
-	}
+class NotifyReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        // Set again alarms after reboot
+        if (Intent.ACTION_BOOT_COMPLETED == intent.action) {
+            Notifier(context, null, 0, Notifier.What.REBOOT)
+        } else { // Create notification
+            val notifyIntent = Intent(context, TreesActivity::class.java)
+                .putExtra(Notifier.TREE_ID_KEY, intent.getIntExtra(TREE_ID_KEY_ENGLISH, 0))
+                .putExtra(Notifier.INDI_ID_KEY, intent.getStringExtra(INDI_ID_KEY))
+                .putExtra(Notifier.NOTIFY_ID_KEY, intent.getIntExtra(ID_KEY, 1))
+            val pendingIntent = PendingIntent.getActivity(
+                context, intent.getIntExtra(ID_KEY, 1),
+                notifyIntent, PendingIntent.FLAG_IMMUTABLE
+            )
+            val builder = NotificationCompat.Builder(context, Notifier.CHANNEL_ID)
+                .setSmallIcon(R.drawable.albero_cherokee)
+                .setContentTitle(intent.getStringExtra(TITLE_KEY))
+                .setContentText(intent.getStringExtra(TEXT_KEY))
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setCategory(NotificationCompat.CATEGORY_EVENT)
+            val notificationManager = NotificationManagerCompat.from(context)
+            notificationManager.notify(intent.getIntExtra(ID_KEY, 1), builder.build())
+        }
+    }
 }

@@ -1,58 +1,47 @@
-package app.familygem.visitor;
+package app.familygem.visitor
 
-import org.folg.gedcom.model.Gedcom;
-import org.folg.gedcom.model.Media;
-import org.folg.gedcom.model.MediaContainer;
-import org.folg.gedcom.model.MediaRef;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import org.folg.gedcom.model.Gedcom
+import org.folg.gedcom.model.Media
+import org.folg.gedcom.model.MediaContainer
+import java.util.LinkedHashSet
 
 /**
  *
  * Visitor who, compared to a shared media, has a triple function:
- *   * - Count media references in all MediaContainers
- *   * - Or delete the same media references
- *   * - In the meantime, list the parent objects of the stacks that contain the media
+ * * - Count media references in all MediaContainers
+ * * - Or delete the same media references
+ * * - In the meantime, list the parent objects of the stacks that contain the media
  *
  *
  * Visitatore che rispetto a un media condiviso ha una triplice funzione:
  * - Contare i riferimenti al media in tutti i MediaContainer
  * - Oppure elimina gli stessi riferimenti al media
  * - Nel frattempo elenca gli oggetti capostipite delle pile che contengono il media
- * */
-public class MediaReferences extends TotalVisitor {
+ */
+class MediaReferences(
+    gc: Gedcom, // the shared media
+    private val media: Media, private val shouldEliminateRef: Boolean
+) : TotalVisitor() {
+    private var progenitor // the progenitor of the stack
+            : Any? = null
+    var num = 0 // the number of references to a Media
+    var founders: MutableSet<Any?> =
+        LinkedHashSet() // the list of the founding objects containing a Media//l'elenco degli oggetti capostipiti contenti un Media
 
-	private Media media; // the shared media
-	private boolean shouldEliminateRef;
-	private Object progenitor; // the progenitor of the stack
-	public int num = 0; // the number of references to a Media
-	public Set<Object> founders = new LinkedHashSet<>(); // the list of the founding objects containing a Media//l'elenco degli oggetti capostipiti contenti un Media
+    init {
+        gc.accept(this)
+    }
 
-	public MediaReferences(Gedcom gc, Media media, boolean eliminate ) {
-		this.media = media;
-		this.shouldEliminateRef = eliminate;
-		gc.accept( this );
-	}
-
-	@Override
-	boolean visit(Object obj, boolean isProgenitor) {
-		if(isProgenitor)
-			progenitor = obj;
-		if( obj instanceof MediaContainer ) {
-			MediaContainer container = (MediaContainer) obj;
-			Iterator<MediaRef> mediaRefs = container.getMediaRefs().iterator();
-			while( mediaRefs.hasNext() )
-				if( mediaRefs.next().getRef().equals(media.getId()) ) {
-					founders.add(progenitor);
-					if(shouldEliminateRef)
-						mediaRefs.remove();
-					else
-						num++;
-				}
-			if( container.getMediaRefs().isEmpty() )
-				container.setMediaRefs( null );
-		}
-		return true;
-	}
+    public override fun visit(obj: Any, isProgenitor: Boolean): Boolean {
+        if (isProgenitor) progenitor = obj
+        if (obj is MediaContainer) {
+            val mediaRefs = obj.mediaRefs.iterator()
+            while (mediaRefs.hasNext()) if (mediaRefs.next().ref == media.id) {
+                founders.add(progenitor)
+                if (shouldEliminateRef) mediaRefs.remove() else num++
+            }
+            if (obj.mediaRefs.isEmpty()) obj.mediaRefs = null
+        }
+        return true
+    }
 }

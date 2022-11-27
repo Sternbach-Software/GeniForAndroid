@@ -35,7 +35,7 @@ class RepositoryActivity : DetailActivity() {
 
         // Collects and displays the sources citing this Repository //Raccoglie e mostra le fonti che citano questo Repository
         val citingSources: MutableList<Source> = ArrayList()
-        for (source in Global.gc.sources) if (source?.repositoryRef?.ref == a.id) citingSources.add(
+        for (source in Global.gc!!.sources) if (source?.repositoryRef?.ref == a.id) citingSources.add(
             source
         )
         if (citingSources.isNotEmpty()) U.putContainer(

@@ -27,7 +27,7 @@ class ListOfSourceCitations(
         gc.accept(this)
     }
 
-    public override fun visit(obj: Any, isProgenitor: Boolean): Boolean {
+    public override fun visit(obj: Any?, isProgenitor: Boolean): Boolean {
         if (isProgenitor) capo = obj
         if (obj is SourceCitationContainer) {
             analyze(obj, obj.sourceCitations)
@@ -40,7 +40,7 @@ class ListOfSourceCitations(
 
     private fun analyze(container: Any, citations: List<SourceCitation>) {
         for (citation in citations)  // (Known sources?)[SourceCitations?] have no Ref to a source //Le fonti-note non hanno Ref ad una fonte
-            if (citation.ref != null && citation.ref == id) {
+            if (citation.ref == id) {
                 val triplet = Triplet()
                 triplet.progenitor = capo
                 triplet.container = container

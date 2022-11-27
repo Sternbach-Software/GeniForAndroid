@@ -52,8 +52,8 @@ class NameActivity : DetailActivity() {
     }
 
     override fun delete() {
-        val currentPerson = Global.gc.getPerson(Global.indi)
-        currentPerson.names.remove(n)
+        val currentPerson = Global.gc?.getPerson(Global.indi)
+        currentPerson?.names?.remove(n)
         U.updateChangeDate(currentPerson)
         Memory.setInstanceAndAllSubsequentToNull(n)
     }

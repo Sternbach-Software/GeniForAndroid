@@ -11,4 +11,14 @@ object Format {
     const val D_M = "d MMM"
     const val Y = "yyy"
     const val EMPTY = ""
+
+    val PATTERNS = listOf(
+        D_M_Y,
+        D_m_Y,
+        MMM_Y,
+        M_Y,
+        D_M,
+        Y,
+        EMPTY,
+    )
 }

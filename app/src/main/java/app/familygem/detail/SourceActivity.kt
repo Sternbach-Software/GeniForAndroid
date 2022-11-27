@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.cardview.widget.CardView
 import app.familygem.*
 import app.familygem.F.appendIfNotNull
+import app.familygem.constant.intdefs.CITATION_KEY
 import app.familygem.visitor.ListOfSourceCitations
 import org.folg.gedcom.model.Source
 
@@ -19,8 +20,8 @@ class SourceActivity : DetailActivity() {
         setTitle(R.string.source)
         f = cast(Source::class.java) as Source
         placeSlug("SOUR", f.id)
-        val citations = ListOfSourceCitations(Global.gc, f.id)
-        f.putExtension("citaz", citations.list.size) // for the LibraryFragment
+        val citations = ListOfSourceCitations(Global.gc!!, f.id)
+        f.putExtension(CITATION_KEY, citations.list.size) // for the LibraryFragment
         place(getString(R.string.abbreviation), "Abbreviation")
         place(getString(R.string.title), "Title", true, true)
         place(getString(R.string.type), "Type", false, true) // _type

@@ -1,368 +1,355 @@
-package app.familygem;
+package app.familygem
 
-import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SearchView;
-import androidx.recyclerview.widget.RecyclerView;
-import android.view.ContextMenu;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.view.SubMenu;
-import android.view.View;
-import android.view.ViewGroup;
-import androidx.fragment.app.Fragment;
-import android.widget.Filter;
-import android.widget.Filterable;
-import android.widget.TextView;
-import org.folg.gedcom.model.EventFact;
-import org.folg.gedcom.model.Family;
-import org.folg.gedcom.model.Name;
-import org.folg.gedcom.model.Note;
-import org.folg.gedcom.model.NoteContainer;
-import org.folg.gedcom.model.Person;
-import org.folg.gedcom.model.Source;
-import org.folg.gedcom.model.SourceCitation;
-import org.folg.gedcom.model.SourceCitationContainer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import app.familygem.detail.SourceActivity;
-import app.familygem.visitor.ListOfSourceCitations;
-import static app.familygem.Global.gc;
+import app.familygem.Memory.Companion.setInstanceAndAllSubsequentToNull
+import app.familygem.SourcesFragment.LibraryAdapter
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import app.familygem.R
+import app.familygem.SourcesFragment
+import app.familygem.SourcesFragment.SourceViewHolder
+import android.widget.Filterable
+import android.widget.Filter.FilterResults
+import android.widget.TextView
+import android.content.Intent
+import android.app.Activity
+import android.content.Context
+import android.view.*
+import app.familygem.Memory
+import app.familygem.detail.SourceActivity
+import app.familygem.U
+import android.view.ContextMenu.ContextMenuInfo
+import android.widget.Filter
+import androidx.appcompat.widget.SearchView
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.RecyclerView
+import app.familygem.constant.intdefs.CITATION_KEY
+import app.familygem.constant.intdefs.LIBRARY_CHOOSE_SOURCE_KEY
+import app.familygem.constant.intdefs.SOURCE_ID_KEY
+import app.familygem.visitor.ListOfSourceCitations
+import app.familygem.visitor.ListOfSourceCitations.Triplet
+import org.folg.gedcom.model.*
+import java.util.*
 
 /**
  * List of Sources (Sources)
- * Unlike {@link FamiliesFragment} it uses an adapter for the RecyclerView
- * */
-public class SourcesFragment extends Fragment {
+ * Unlike [FamiliesFragment] it uses an adapter for the RecyclerView
+ */
+class SourcesFragment : Fragment() {
+    private lateinit var listOfSources: List<Source>
+    private var adapter: LibraryAdapter? = null
+    private var order = 0
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        bandolo: Bundle?
+    ): View? {
+        listOfSources = Global.gc!!.sources
+        (activity as AppCompatActivity?)!!.supportActionBar!!.setTitle(
+            listOfSources.size.toString() + " " +
+                    getString(if (listOfSources.size == 1) R.string.source else R.string.sources).lowercase(
+                        Locale.getDefault()
+                    )
+        )
+        if (listOfSources.size > 1) setHasOptionsMenu(true)
+        val view = inflater.inflate(R.layout.sources, container, false)
+        val sources = view.findViewById<RecyclerView>(R.id.sources_recycler)
+        adapter = LibraryAdapter()
+        sources.adapter = adapter
+        view.findViewById<View>(R.id.fab).setOnClickListener { v: View? ->
+            createNewSource(
+                context, null
+            )
+        }
+        return view
+    }
 
-	private List<Source> listOfSources;
-	private LibraryAdapter adapter;
-	private int order;
+    inner class LibraryAdapter : RecyclerView.Adapter<SourceViewHolder>(), Filterable {
+        override fun onCreateViewHolder(parent: ViewGroup, type: Int): SourceViewHolder {
+            val sourceView = LayoutInflater.from(parent.context)
+                .inflate(R.layout.source_item, parent, false)
+            registerForContextMenu(sourceView)
+            return SourceViewHolder(sourceView)
+        }
 
-	@Override
-	public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle bandolo ) {
-		listOfSources = gc.getSources();
-		((AppCompatActivity) getActivity()).getSupportActionBar().setTitle( listOfSources.size() + " " +
-				getString(listOfSources.size()==1 ? R.string.source : R.string.sources).toLowerCase() );
-		if( listOfSources.size() > 1 )
-			setHasOptionsMenu(true);
-		View view = inflater.inflate(R.layout.sources, container, false);
-		RecyclerView sources = view.findViewById( R.id.sources_recycler );
-		adapter = new LibraryAdapter();
-		sources.setAdapter(adapter);
-		view.findViewById( R.id.fab ).setOnClickListener( v -> createNewSource( getContext(), null ) );
-		return view;
-	}
+        override fun onBindViewHolder(holder: SourceViewHolder, position: Int) {
+            val source = listOfSources!![position]
+            holder.id.text = source.id
+            holder.id.visibility =
+                if (order == 1 || order == 2) View.VISIBLE else View.GONE
+            holder.title.text = sourceTitle(source)
+            var times = source.getExtension(CITATION_KEY)
+            // Count citations with my method
+            if (times == null) {
+                times = countCitations(source)
+                source.putExtension(CITATION_KEY, times)
+            }
+            holder.times.text = times.toString()
+        }
 
-	public class LibraryAdapter extends RecyclerView.Adapter<SourceViewHolder> implements Filterable {
-		@Override
-		public SourceViewHolder onCreateViewHolder(ViewGroup parent, int type ) {
-			View sourceView = LayoutInflater.from( parent.getContext() )
-					.inflate(R.layout.source_item, parent, false);
-			registerForContextMenu( sourceView );
-			return new SourceViewHolder( sourceView );
-		}
-		@Override
-		public void onBindViewHolder(SourceViewHolder holder, int position ) {
-			Source source = listOfSources.get(position);
-			holder.id.setText( source.getId() );
-			holder.id.setVisibility( order == 1 || order == 2 ? View.VISIBLE : View.GONE  );
-			holder.title.setText( sourceTitle(source) );
-			Object times = source.getExtension("citaz");
-			// Count citations with my method
-			if( times == null ) {
-				times = countCitations( source );
-				source.putExtension("citaz", times );
-			}
-			holder.times.setText( String.valueOf(times) );
-		}
-		// Filter source titles based on search words
-		@Override
-		public Filter getFilter() {
-			return new Filter() {
-				@Override
-				protected FilterResults performFiltering(CharSequence charSequence) {
-					String query = charSequence.toString();
-					if (query.isEmpty()) {
-						listOfSources = gc.getSources();
-					} else {
-						List<Source> filteredList = new ArrayList<>();
-						for (Source source : gc.getSources()) {
-							if( sourceTitle(source).toLowerCase().contains(query.toLowerCase()) ) {
-								filteredList.add(source);
-							}
-						}
-						listOfSources = filteredList;
-					}
-					sortSources(); // Sorting the query reorders those that appear
-					FilterResults filterResults = new FilterResults();
-					filterResults.values = listOfSources;
-					return filterResults;
-				}
-				@Override
-				protected void publishResults(CharSequence cs, FilterResults fr) {
-					notifyDataSetChanged();
-				}
-			};
-		}
-		@Override
-		public int getItemCount() {
-			return listOfSources.size();
-		}
-	}
+        // Filter source titles based on search words
+        override fun getFilter(): Filter {
+            return object : Filter() {
+                override fun performFiltering(charSequence: CharSequence): FilterResults {
+                    val query = charSequence.toString()
+                    listOfSources = if (query.isEmpty()) {
+                        Global.gc!!.sources
+                    } else {
+                        val filteredList: MutableList<Source> = ArrayList()
+                        for (source in Global.gc!!.sources) {
+                            if (sourceTitle(source).lowercase(Locale.getDefault())
+                                    .contains(query.lowercase(Locale.getDefault()))
+                            ) {
+                                filteredList.add(source)
+                            }
+                        }
+                        filteredList
+                    }
+                    sortSources() // Sorting the query reorders those that appear
+                    val filterResults = FilterResults()
+                    filterResults.values = listOfSources
+                    return filterResults
+                }
 
-	class SourceViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-		TextView id;
-		TextView title;
-		TextView times;
-		SourceViewHolder(View view ) {
-			super( view );
-			id = view.findViewById( R.id.source_id );
-			title = view.findViewById( R.id.source_title );
-			times = view.findViewById( R.id.source_num );
-			view.setOnClickListener(this);
-		}
-		@Override
-		public void onClick( View v ) {
-			// Returns the id of a source to IndividualPersonActivity and DetailActivity
-			if( getActivity().getIntent().getBooleanExtra("bibliotecaScegliFonte",false) ) {
-				Intent intent = new Intent();
-				intent.putExtra("idFonte", id.getText().toString() );
-				getActivity().setResult( Activity.RESULT_OK, intent );
-				getActivity().finish();
-			} else {
-				Source source = gc.getSource( id.getText().toString() );
-				Memory.setFirst( source );
-				startActivity( new Intent( getContext(), SourceActivity.class ) );
-			}
-		}
-	}
+                override fun publishResults(cs: CharSequence, fr: FilterResults) {
+                    notifyDataSetChanged()
+                }
+            }
+        }
 
-	@Override
-	public void onPause() {
-		super.onPause();
-		getActivity().getIntent().removeExtra("bibliotecaScegliFonte");
-	}
+        override fun getItemCount(): Int {
+            return listOfSources!!.size
+        }
+    }
 
-	/**
-	 * Sort the sources according to one of the criteria.
-	 * The order then becomes permanent in the Json.
-	 * */
-	private void sortSources() {
-		if( order > 0 ) {
-			if( order == 5 || order == 6 ) {
-				for( Source source : listOfSources) {
-					if( source.getExtension("citaz") == null )
-						source.putExtension( "citaz", countCitations(source) );
-				}
-			}
-			Collections.sort(listOfSources, (f1, f2) -> {
-				switch(order) {
-					case 1:	// Sort by numeric id
-						return U.extractNum(f1.getId()) - U.extractNum(f2.getId());
-					case 2:
-						return U.extractNum(f2.getId()) - U.extractNum(f1.getId());
-					case 3:	// Alphabetical order of titles
-						return sourceTitle(f1).compareToIgnoreCase( sourceTitle(f2) );
-					case 4:
-						return sourceTitle(f2).compareToIgnoreCase( sourceTitle(f1) );
-					case 5:	// Sort by number of citations
-						return U.castJsonInt(f1.getExtension("citaz")) - U.castJsonInt(f2.getExtension("citaz"));
-					case 6:
-						return U.castJsonInt(f2.getExtension("citaz")) - U.castJsonInt(f1.getExtension("citaz"));
-				}
-				return 0;
-			});
-		}
-	}
+    inner class SourceViewHolder(view: View) : RecyclerView.ViewHolder(view), View.OnClickListener {
+        var id: TextView
+        var title: TextView
+        var times: TextView
 
-	/**
-	 * Returns the title of the source
-	 * */
-	static String sourceTitle(Source fon ) {
-		String tit = "";
-		if( fon != null )
-			if( fon.getAbbreviation() != null )
-				tit = fon.getAbbreviation();
-			else if( fon.getTitle() != null )
-				tit = fon.getTitle();
-			else if( fon.getText() != null ) {
-				tit = fon.getText().replaceAll("\n", " ");
-				//tit = tit.length() > 35 ? tit.substring(0,35)+"…" : tit;
-			} else if( fon.getPublicationFacts() != null ) {
-				tit = fon.getPublicationFacts().replaceAll("\n", " ");
-			}
-		return tit;
-	}
+        init {
+            id = view.findViewById(R.id.source_id)
+            title = view.findViewById(R.id.source_title)
+            times = view.findViewById(R.id.source_num)
+            view.setOnClickListener(this)
+        }
 
-	private int count;
-	/**
-	 * Returns how many times a source is cited in Gedcom
-	 * I tried to rewrite it as Visitor, but it's much slower
-	 * */
-	private int countCitations(Source source ) {
-		count = 0;
-		for( Person p : Global.gc.getPeople() ) {
-			countCitations( p, source );
-			for( Name n : p.getNames() )
-				countCitations( n, source );
-			for( EventFact ef : p.getEventsFacts() )
-				countCitations( ef, source );
-		}
-		for( Family f : Global.gc.getFamilies() ) {
-			countCitations( f, source );
-			for( EventFact ef : f.getEventsFacts() )
-				countCitations( ef, source );
-		}
-		for( Note n : Global.gc.getNotes() )
-			countCitations( n, source );
-		return count;
-	}
+        override fun onClick(v: View) {
+            // Returns the id of a source to IndividualPersonActivity and DetailActivity
+            if (requireActivity().intent.getBooleanExtra(LIBRARY_CHOOSE_SOURCE_KEY, false)) {
+                val intent = Intent()
+                intent.putExtra(SOURCE_ID_KEY, id.text.toString())
+                requireActivity().setResult(Activity.RESULT_OK, intent)
+                requireActivity().finish()
+            } else {
+                val source = Global.gc!!.getSource(id.text.toString())
+                Memory.setFirst(source)
+                startActivity(Intent(context, SourceActivity::class.java))
+            }
+        }
+    }
 
-	/**
-	 * receives an Object (Person, Name, EventFact...) and counts how many times the source is cited
-	 * */
-	private void countCitations(Object object, Source source ) {
-		List<SourceCitation> sourceCitations;
-		if( object instanceof Note )	// if it is a Note
-			sourceCitations = ((Note) object).getSourceCitations();
-		else {
-			for( Note n : ((NoteContainer) object).getNotes() )
-				countCitations( n, source );
-			sourceCitations = ((SourceCitationContainer) object).getSourceCitations();
-		}
-		for( SourceCitation sc : sourceCitations ) {
-			if( sc.getRef() != null )
-				if( sc.getRef().equals(source.getId()) )
-					count++;
-		}
-	}
+    override fun onPause() {
+        super.onPause()
+        requireActivity().intent.removeExtra(LIBRARY_CHOOSE_SOURCE_KEY)
+    }
 
-	static void createNewSource(Context context, Object container ){
-		Source source = new Source();
-		source.setId( U.newID( gc, Source.class ) );
-		source.setTitle( "" );
-		gc.addSource( source );
-		if( container != null ) {
-			SourceCitation sourceCitation = new SourceCitation();
-			sourceCitation.setRef( source.getId() );
-			if( container instanceof Note ) ((Note)container).addSourceCitation( sourceCitation );
-			else ((SourceCitationContainer)container).addSourceCitation( sourceCitation );
-		}
-		U.save( true, source );
-		Memory.setFirst( source );
-		context.startActivity( new Intent( context, SourceActivity.class ) );
-	}
+    /**
+     * Sort the sources according to one of the criteria.
+     * The order then becomes permanent in the Json.
+     */
+    private fun sortSources() {
+        if (order > 0) {
+            if (order == 5 || order == 6) {
+                for (source in listOfSources!!) {
+                    if (source.getExtension(CITATION_KEY) == null) source.putExtension(
+                        CITATION_KEY,
+                        countCitations(source)
+                    )
+                }
+            }
+            Collections.sort(listOfSources) { f1: Source, f2: Source ->
+                when (order) {
+                    1 -> return@sort U.extractNum(f1.id) - U.extractNum(f2.id)
+                    2 -> return@sort U.extractNum(f2.id) - U.extractNum(f1.id)
+                    3 -> return@sort sourceTitle(f1).compareTo(sourceTitle(f2), ignoreCase = true)
+                    4 -> return@sort sourceTitle(f2).compareTo(sourceTitle(f1), ignoreCase = true)
+                    5 -> return@sort U.castJsonInt(f1.getExtension(CITATION_KEY)) - U.castJsonInt(
+                        f2.getExtension(
+                            CITATION_KEY
+                        )
+                    )
+                    6 -> return@sort U.castJsonInt(f2.getExtension(CITATION_KEY)) - U.castJsonInt(
+                        f1.getExtension(
+                            CITATION_KEY
+                        )
+                    )
+                }
+                0
+            }
+        }
+    }
 
-	/**
-	 * // Remove the source, the Refs in all SourceCitations pointing to it, and empty SourceCitations
-	 * All citations to the deleted Source become [{@link Source}]s to which a Source should be able to be reattached
-	 * @return an array of modified parents
-	 *  */
-	public static Object[] deleteSource(Source source ) {
-		ListOfSourceCitations citations = new ListOfSourceCitations( gc, source.getId() );
-		for( ListOfSourceCitations.Triplet citation : citations.getList()) {
-			SourceCitation sc = citation.getCitation();
-			sc.setRef( null );
-			// If the SourceCitation contains nothing else, it can be deleted
-			boolean deletable = true;
-			if( sc.getPage()!=null || sc.getDate()!=null || sc.getText()!=null || sc.getQuality()!=null
-					|| !sc.getAllNotes(gc).isEmpty() || !sc.getAllMedia(gc).isEmpty() || !sc.getExtensions().isEmpty() )
-				deletable = false;
-			if( deletable ) {
-				Object container = citation.getContainer();
-				List<SourceCitation> list;
-				if( container instanceof Note )
-					list = ((Note)container).getSourceCitations();
-				else
-					list = ((SourceCitationContainer)container).getSourceCitations();
-				list.remove( sc );
-				if( list.isEmpty() ) {
-					if( container instanceof Note )
-						((Note)container).setSourceCitations( null );
-					else
-						((SourceCitationContainer)container).setSourceCitations( null );
-				}
-			}
-		}
-		gc.getSources().remove( source );
-		if( gc.getSources().isEmpty() )
-			gc.setSources( null );
-		gc.createIndexes();	// necessary
-		Memory.setInstanceAndAllSubsequentToNull( source );
-		return citations.getProgenitors();
-	}
+    private var count = 0
 
-	// options menu in the toolbar
-	@Override
-	public void onCreateOptionsMenu( Menu menu, MenuInflater inflater ) {
-		SubMenu subMenu = menu.addSubMenu(R.string.order_by);
-		if( Global.settings.expert )
-			subMenu.add(0, 1, 0, R.string.id);
-		subMenu.add(0, 2, 0, R.string.title);
-		subMenu.add(0, 3, 0, R.string.citations);
+    /**
+     * Returns how many times a source is cited in Gedcom
+     * I tried to rewrite it as Visitor, but it's much slower
+     */
+    private fun countCitations(source: Source): Int {
+        count = 0
+        for (p in Global.gc!!.people) {
+            countCitations(p, source)
+            for (n in p.names) countCitations(n, source)
+            for (ef in p.eventsFacts) countCitations(ef, source)
+        }
+        for (f in Global.gc!!.families) {
+            countCitations(f, source)
+            for (ef in f.eventsFacts) countCitations(ef, source)
+        }
+        for (n in Global.gc!!.notes) countCitations(n, source)
+        return count
+    }
 
-		// Search in the Library
-		inflater.inflate(R.menu.search, menu);
-		final SearchView searchView = (SearchView)menu.findItem(R.id.search_item).getActionView();
-		searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-			@Override
-			public boolean onQueryTextChange(String query) {
-				adapter.getFilter().filter(query);
-				return true;
-			}
-			@Override
-			public boolean onQueryTextSubmit(String q) {
-				searchView.clearFocus();
-				return false;
-			}
-		});
-	}
+    /**
+     * receives an Object (Person, Name, EventFact...) and counts how many times the source is cited
+     */
+    private fun countCitations(`object`: Any, source: Source) {
+        val sourceCitations: List<SourceCitation>
+        sourceCitations = if (`object` is Note) // if it is a Note
+            `object`.sourceCitations else {
+            for (n in (`object` as NoteContainer).notes) countCitations(n, source)
+            (`object` as SourceCitationContainer).sourceCitations
+        }
+        for (sc in sourceCitations) {
+            if (sc.ref != null) if (sc.ref == source.id) count++
+        }
+    }
 
-	@Override
-	public boolean onOptionsItemSelected( MenuItem item ) {
-		int id = item.getItemId();
-		if( id > 0 && id <= 3 ) {
-			if( order == id*2-1 )
-				order++;
-			else if( order == id*2 )
-				order--;
-			else
-				order = id*2-1;
-			sortSources();
-			adapter.notifyDataSetChanged();
-			return true;
-		}
-		return false;
-	}
+    // options menu in the toolbar
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        val subMenu = menu.addSubMenu(R.string.order_by)
+        if (Global.settings!!.expert) subMenu.add(0, 1, 0, R.string.id)
+        subMenu.add(0, 2, 0, R.string.title)
+        subMenu.add(0, 3, 0, R.string.citations)
 
-	private Source source;
-	@Override
-	public void onCreateContextMenu(ContextMenu menu, View vista, ContextMenu.ContextMenuInfo info) {
-		source = gc.getSource(((TextView)vista.findViewById(R.id.source_id)).getText().toString());
-		if( Global.settings.expert )
-			menu.add(0, 0, 0, R.string.edit_id);
-		menu.add(0, 1, 0, R.string.delete);
-	}
-	@Override
-	public boolean onContextItemSelected(MenuItem item) {
-		if( item.getItemId() == 0 ) { // Edit source ID
-			U.editId(getContext(), source, getActivity()::recreate);
-		} else if( item.getItemId() == 1 ) { // Delete source
-			Object[] objects = deleteSource(source);
-			U.save(false, objects);
-			getActivity().recreate();
-		} else {
-			return false;
-		}
-		return true;
-	}
+        // Search in the Library
+        inflater.inflate(R.menu.search, menu)
+        val searchView = menu.findItem(R.id.search_item).actionView as SearchView?
+        searchView!!.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextChange(query: String): Boolean {
+                adapter!!.filter.filter(query)
+                return true
+            }
+
+            override fun onQueryTextSubmit(q: String): Boolean {
+                searchView.clearFocus()
+                return false
+            }
+        })
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
+        if (id > 0 && id <= 3) {
+            if (order == id * 2 - 1) order++ else if (order == id * 2) order-- else order =
+                id * 2 - 1
+            sortSources()
+            adapter!!.notifyDataSetChanged()
+            return true
+        }
+        return false
+    }
+
+    private var source: Source? = null
+    override fun onCreateContextMenu(menu: ContextMenu, vista: View, info: ContextMenuInfo?) {
+        source =
+            Global.gc!!.getSource((vista.findViewById<View>(R.id.source_id) as TextView).text.toString())
+        if (Global.settings!!.expert) menu.add(0, 0, 0, R.string.edit_id)
+        menu.add(0, 1, 0, R.string.delete)
+    }
+
+    override fun onContextItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == 0) { // Edit source ID
+            source?.let { U.editId(requireContext(), it) { requireActivity().recreate() } }
+        } else if (item.itemId == 1) { // Delete source
+            val objects = deleteSource(source)
+            U.save(false, *objects)
+            requireActivity().recreate()
+        } else {
+            return false
+        }
+        return true
+    }
+
+    companion object {
+        /**
+         * Returns the title of the source
+         */
+        @JvmStatic
+        fun sourceTitle(fon: Source?): String {
+            var tit = ""
+            if (fon != null) if (fon.abbreviation != null) tit =
+                fon.abbreviation else if (fon.title != null) tit =
+                fon.title else if (fon.text != null) {
+                tit = fon.text.replace("\n".toRegex(), " ")
+                //tit = tit.length() > 35 ? tit.substring(0,35)+"…" : tit;
+            } else if (fon.publicationFacts != null) {
+                tit = fon.publicationFacts.replace("\n".toRegex(), " ")
+            }
+            return tit
+        }
+
+        fun createNewSource(context: Context?, container: Any?) {
+            val source = Source()
+            source.id = U.newID(Global.gc!!, Source::class.java)
+            source.title = ""
+            Global.gc!!.addSource(source)
+            if (container != null) {
+                val sourceCitation = SourceCitation()
+                sourceCitation.ref = source.id
+                if (container is Note) container.addSourceCitation(sourceCitation) else (container as SourceCitationContainer).addSourceCitation(
+                    sourceCitation
+                )
+            }
+            U.save(true, source)
+            Memory.setFirst(source)
+            context!!.startActivity(Intent(context, SourceActivity::class.java))
+        }
+
+        /**
+         * // Remove the source, the Refs in all SourceCitations pointing to it, and empty SourceCitations
+         * All citations to the deleted Source become [[Source]]s to which a Source should be able to be reattached
+         * @return an array of modified parents
+         */
+        fun deleteSource(source: Source?): Array<Any> {
+            val citations = ListOfSourceCitations(Global.gc!!, source!!.id)
+            for (citation in citations.list) {
+                val sc = citation.citation
+                sc!!.ref = null
+                // If the SourceCitation contains nothing else, it can be deleted
+                var deletable = true
+                if (sc.page != null || sc.date != null || sc.text != null || sc.quality != null || !sc.getAllNotes(
+                        Global.gc
+                    ).isEmpty() || !sc.getAllMedia(Global.gc).isEmpty() || !sc.extensions.isEmpty()
+                ) deletable = false
+                if (deletable) {
+                    val container = citation.container
+                    var list: MutableList<SourceCitation?>
+                    list =
+                        if (container is Note) container.sourceCitations else (container as SourceCitationContainer?)!!.sourceCitations
+                    list.remove(sc)
+                    if (list.isEmpty()) {
+                        if (container is Note) container.sourceCitations =
+                            null else (container as SourceCitationContainer?)!!.sourceCitations =
+                            null
+                    }
+                }
+            }
+            Global.gc!!.sources.remove(source)
+            if (Global.gc!!.sources.isEmpty()) Global.gc!!.sources = null
+            Global.gc!!.createIndexes() // necessary
+            setInstanceAndAllSubsequentToNull(source)
+            return citations.progenitors
+        }
+    }
 }

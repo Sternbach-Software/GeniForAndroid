@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import app.familygem.Global
 import app.familygem.constant.Choice
+import app.familygem.constant.intdefs.FROM_NOTES_KEY
+import app.familygem.constant.intdefs.NOTE_ID_KEY
 import app.familygem.visitor.NoteList
 import org.folg.gedcom.model.Note
 import org.folg.gedcom.model.NoteRef
@@ -41,7 +43,7 @@ class NotesFragment : Fragment() {
             // Returns the id of a note to IndividualPersonActivity and DetailActivity
             if (requireActivity().intent?.getBooleanExtra(Choice.NOTE, false) == true) {
                 val intent = Intent()
-                intent.putExtra("noteId", note.id)
+                intent.putExtra(NOTE_ID_KEY, note.id)
                 activity?.setResult(AppCompatActivity.RESULT_OK, intent)
                 activity?.finish()
             } else { // Opens the detail of the note
@@ -50,7 +52,7 @@ class NotesFragment : Fragment() {
                     Memory.setFirst(note)
                 } else { // Simple note
                     FindStack(Global.gc, note)
-                    intent.putExtra("fromNotes", true)
+                    intent.putExtra(FROM_NOTES_KEY, true)
                 }
                 context?.startActivity(intent)
             }

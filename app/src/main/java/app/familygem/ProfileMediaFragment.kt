@@ -1,106 +1,124 @@
-package app.familygem;
+package app.familygem
 
-import android.os.Bundle;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import android.view.ContextMenu;
-import android.view.LayoutInflater;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import org.folg.gedcom.model.Media;
-import org.folg.gedcom.model.MediaContainer;
-import org.folg.gedcom.model.Person;
-import app.familygem.visitor.MediaListContainer;
-import static app.familygem.Global.gc;
+import app.familygem.GalleryFragment.Companion.disconnectMedia
+import app.familygem.GalleryFragment.Companion.deleteMedia
+import app.familygem.F.showMainImageForPerson
+import app.familygem.visitor.MediaListContainer
+import android.os.Bundle
+import android.view.*
+import app.familygem.R
+import android.widget.LinearLayout
+import app.familygem.MediaGalleryAdapter
+import android.view.ContextMenu.ContextMenuInfo
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import app.familygem.visitor.MediaListContainer.MediaWithContainer
+import app.familygem.U
+import app.familygem.GalleryFragment
+import org.folg.gedcom.model.MediaContainer
+import app.familygem.F
+import app.familygem.ProfileFactsFragment
+import org.folg.gedcom.model.Media
+import org.folg.gedcom.model.Person
 
 /**
  * Photo tab
- * */
-public class ProfileMediaFragment extends Fragment {
+ */
+class ProfileMediaFragment : Fragment() {
+    var person: Person? = null
+    var mediaListContainer: MediaListContainer? = null
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val vistaMedia = inflater.inflate(R.layout.individuo_scheda, container, false)
+        if (Global.gc != null) {
+            val layout = vistaMedia.findViewById<LinearLayout>(R.id.contenuto_scheda)
+            person = Global.gc!!.getPerson(Global.indi)
+            if (person != null) {
+                mediaListContainer = MediaListContainer(Global.gc!!, true)
+                person!!.accept(mediaListContainer)
+                val recyclerView = RecyclerView(layout.context)
+                recyclerView.setHasFixedSize(true)
+                val layoutManager: RecyclerView.LayoutManager = GridLayoutManager(
+                    context, 2
+                )
+                recyclerView.layoutManager = layoutManager
+                val adapter = MediaGalleryAdapter(mediaListContainer!!.mediaList.toMutableList(), true)
+                recyclerView.adapter = adapter
+                layout.addView(recyclerView)
+            }
+        }
+        return vistaMedia
+    }
 
-	Person person;
-	MediaListContainer mediaListContainer;
+    // context Menu
+    var media: Media? = null
 
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		View vistaMedia = inflater.inflate(R.layout.individuo_scheda, container, false);
-		if( gc != null ) {
-			final LinearLayout layout = vistaMedia.findViewById(R.id.contenuto_scheda);
-			person = gc.getPerson(Global.indi);
-			if( person != null ) {
-				mediaListContainer = new MediaListContainer(gc, true);
-				person.accept(mediaListContainer);
-				RecyclerView recyclerView = new RecyclerView(layout.getContext());
-				recyclerView.setHasFixedSize(true);
-				RecyclerView.LayoutManager layoutManager = new GridLayoutManager(getContext(), 2);
-				recyclerView.setLayoutManager(layoutManager);
-				MediaGalleryAdapter adapter = new MediaGalleryAdapter(mediaListContainer.mediaList, true);
-				recyclerView.setAdapter(adapter);
-				layout.addView(recyclerView);
-			}
-		}
-		return vistaMedia;
-	}
+    /**
+     * The images are not only of [.person], but also of its subordinates [org.folg.gedcom.model.EventFact], [org.folg.gedcom.model.SourceCitation] ...
+     */
+    var container: Any? = null
+    override fun onCreateContextMenu(menu: ContextMenu, view: View, info: ContextMenuInfo?) {
+        media = view.getTag(R.id.tag_object) as Media
+        container = view.getTag(R.id.tag_contenitore)
+        if (mediaListContainer!!.mediaList.size > 1 && media!!.primary == null) menu.add(
+            0,
+            0,
+            0,
+            R.string.primary_media
+        )
+        if (media!!.id != null) menu.add(0, 1, 0, R.string.unlink)
+        menu.add(0, 2, 0, R.string.delete)
+    }
 
-	// context Menu
-	Media media;
-	/**
-	 * The images are not only of {@link #person}, but also of its subordinates {@link org.folg.gedcom.model.EventFact}, {@link org.folg.gedcom.model.SourceCitation} ...
-	 * */
-	Object container;
-	@Override
-	public void onCreateContextMenu(ContextMenu menu, View view, ContextMenu.ContextMenuInfo info) {
-		media = (Media)view.getTag(R.id.tag_object);
-		container = view.getTag(R.id.tag_contenitore);
-		if( mediaListContainer.mediaList.size() > 1 && media.getPrimary() == null )
-			menu.add(0, 0, 0, R.string.primary_media);
-		if( media.getId() != null )
-			menu.add(0, 1, 0, R.string.unlink);
-		menu.add(0, 2, 0, R.string.delete);
-	}
-	@Override
-	public boolean onContextItemSelected( MenuItem item ) {
-		int id = item.getItemId();
-		if( id == 0 ) { // Principal
-			for( MediaListContainer.MedCont medCont : mediaListContainer.mediaList) // It resets them all then marks this.person
-				medCont.media.setPrimary(null);
-			media.setPrimary("Y");
-			if( media.getId() != null ) // To update the change date in the Media record rather than in the Person
-				U.save(true, media);
-			else
-				U.save(true, person);
-			refresh();
-			return true;
-		} else if( id == 1 ) { // Scollega
-			GalleryFragment.disconnectMedia(media.getId(), (MediaContainer)container);
-			U.save(true, person);
-			refresh();
-			return true;
-		} else if( id == 2 ) { // Delete
-			Object[] capi = GalleryFragment.deleteMedia(media, null);
-			U.save(true, capi);
-			refresh();
-			return true;
-		}
-		return false;
-	}
+    override fun onContextItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
+        if (id == 0) { // Principal
+            for ((media1) in mediaListContainer!!.mediaList)  // It resets them all then marks this.person
+                media1.primary = null
+            media!!.primary = "Y"
+            if (media!!.id != null) // To update the change date in the Media record rather than in the Person
+                U.save(true, media) else U.save(true, person)
+            refresh()
+            return true
+        } else if (id == 1) { // Scollega
+            disconnectMedia(media!!.id, (container as MediaContainer?)!!)
+            U.save(true, person)
+            refresh()
+            return true
+        } else if (id == 2) { // Delete
+            val capi = deleteMedia(media, null)
+            U.save(true, *capi)
+            refresh()
+            return true
+        }
+        return false
+    }
 
-	/**
-	 * Refresh the contents of the Media snippet
-	 * */
-	void refresh() {
-		// refill the fragment
-		FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
-		fragmentManager.beginTransaction().detach(this).commit();
-		fragmentManager.beginTransaction().attach(this).commit();
-		F.showMainImageForPerson(Global.gc, person, requireActivity().findViewById(R.id.person_image));
-		F.showMainImageForPerson(Global.gc, person, requireActivity().findViewById(R.id.profile_background));
-		// Events tab
-		ProfileFactsFragment eventsTab = (ProfileFactsFragment)requireActivity().getSupportFragmentManager().findFragmentByTag("android:switcher:" + R.id.profile_pager + ":1");
-		eventsTab.refresh();
-	}
+    /**
+     * Refresh the contents of the Media snippet
+     */
+    fun refresh() {
+        // refill the fragment
+        val fragmentManager = requireActivity().supportFragmentManager
+        fragmentManager.beginTransaction().detach(this).commit()
+        fragmentManager.beginTransaction().attach(this).commit()
+        showMainImageForPerson(
+            Global.gc!!,
+            person!!,
+            requireActivity().findViewById(R.id.person_image)
+        )
+        showMainImageForPerson(
+            Global.gc!!,
+            person!!,
+            requireActivity().findViewById(R.id.profile_background)
+        )
+        // Events tab
+        val eventsTab =
+            requireActivity().supportFragmentManager.findFragmentByTag("android:switcher:" + R.id.profile_pager + ":1") as ProfileFactsFragment?
+        eventsTab!!.refresh()
+    }
 }

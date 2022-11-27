@@ -1,23 +1,22 @@
-package app.familygem;
+package app.familygem
+
+import java.lang.StringBuilder
 
 /**
  * Shorthand wrapper for logging
- * */
-public class s {
+ */
+object s {
+    @JvmStatic
+    fun l(vararg objects: Any?) {
+        val str = StringBuilder()
+        if (objects != null) {
+            for (obj in objects) str.append(obj).append(" ")
+        } else str.append(null as String?)
+        println(".\t$str")
+        //android.util.Log.v("v", str);
+    }
 
-	public static void l(Object... objects) {
-		StringBuilder str = new StringBuilder();
-		if( objects != null ) {
-			for( Object obj : objects )
-				str.append(obj).append(" ");
-		} else
-			str.append((String) null);
-		System.out.println(".\t" + str);
-		//android.util.Log.v("v", str);
-	}
-	
-	public static void p( Object word ) {
-		System.out.print( word );
-	}
-	
+    fun p(word: Any?) {
+        print(word)
+    }
 }

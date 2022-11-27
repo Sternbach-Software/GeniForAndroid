@@ -12,6 +12,9 @@ import android.view.View
 import android.widget.ImageView
 import androidx.multidex.BuildConfig
 import app.familygem.*
+import app.familygem.constant.intdefs.IS_ALONE_KEY
+import app.familygem.constant.intdefs.PATH_KEY
+import app.familygem.constant.intdefs.URI_KEY
 import org.folg.gedcom.model.Media
 import java.io.File
 import java.lang.Exception
@@ -56,24 +59,24 @@ class ImageActivity : DetailActivity() {
         U.placeNotes(box, m, true)
         U.placeChangeDate(box, m.change)
         // List of records in which the media is used
-        val mediaReferences = MediaReferences(Global.gc, m, false)
+        val mediaReferences = MediaReferences(Global.gc!!, m, false)
         if (mediaReferences.founders.size > 0) U.putContainer(
             box,
             mediaReferences.founders.toTypedArray(), //TODO refactor to use List
             R.string.used_by
         ) else if ((box.context as Activity).intent.getBooleanExtra(
-                "daSolo",
+                IS_ALONE_KEY,
                 false
             )
         ) U.putContainer(box, Memory.firstObject(), R.string.into)
     }
 
-    private fun displayMedia(m: Media?, position: Int) {
+    private fun displayMedia(m: Media, position: Int) {
         imageView = LayoutInflater.from(this).inflate(R.layout.immagine_immagine, box, false)
         box.addView(imageView, position)
         val subImageView = imageView.findViewById<ImageView>(R.id.immagine_foto) //TODO rename
         F.showImage(m, subImageView, imageView.findViewById(R.id.immagine_circolo))
-        imageView.setOnClickListener { _: View? ->
+        imageView.setOnClickListener {
             val path = subImageView.getTag(R.id.tag_path) as String?
             var uri = subImageView.getTag(R.id.tag_uri) as Uri?
             when (subImageView.getTag(R.id.tag_file_type) as Int) {
@@ -118,8 +121,8 @@ class ImageActivity : DetailActivity() {
                 }
                 else -> { // Real image //Immagine vera e propria
                     val intent = Intent(this@ImageActivity, BlackboardActivity::class.java)
-                    intent.putExtra("path", path)
-                    if (uri != null) intent.putExtra("uri", uri.toString())
+                    intent.putExtra(PATH_KEY, path)
+                    if (uri != null) intent.putExtra(URI_KEY, uri.toString())
                     startActivity(intent)
                 }
             }

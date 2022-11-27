@@ -1,32 +1,35 @@
-package app.familygem;
+package app.familygem
 
-import android.net.Uri;
-import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
-import android.view.WindowManager;
-import android.widget.ImageView;
-import com.squareup.picasso.Picasso;
-import com.squareup.picasso.RequestCreator;
+import android.net.Uri
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.view.View
+import android.view.WindowManager
+import android.widget.ImageView
+import app.familygem.R
+import app.familygem.constant.intdefs.PATH_KEY
+import app.familygem.constant.intdefs.URI_KEY
+import com.squareup.picasso.Picasso
+import com.squareup.picasso.RequestCreator
+import java.io.File
 
-import java.io.File;
-
-public class BlackboardActivity extends AppCompatActivity {
-
-	@Override
-	protected void onCreate( Bundle bundle ) {
-		super.onCreate( bundle );
-		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-		setContentView( R.layout.lavagna );
-		// Show the file in full resolution
-		String path = getIntent().getStringExtra( "path" );
-		Picasso picasso = Picasso.get();
-		RequestCreator creator;
-		if( path != null ) {
-			creator = picasso.load( new File(path) );
-		} else {
-			Uri uri = Uri.parse( getIntent().getStringExtra("uri") );
-			creator = picasso.load( uri );
-		}
-		creator.into( (ImageView)findViewById(R.id.lavagna_immagine) );
-	}
+class BlackboardActivity : AppCompatActivity() {
+    override fun onCreate(bundle: Bundle?) {
+        super.onCreate(bundle)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
+        setContentView(R.layout.lavagna)
+        // Show the file in full resolution
+        val path = intent.getStringExtra(PATH_KEY)
+        val picasso = Picasso.get()
+        val creator = if (path != null) {
+            picasso.load(File(path))
+        } else {
+            val uri = Uri.parse(intent.getStringExtra(URI_KEY))
+            picasso.load(uri)
+        }
+        creator.into(findViewById<View>(R.id.lavagna_immagine) as ImageView)
+    }
 }

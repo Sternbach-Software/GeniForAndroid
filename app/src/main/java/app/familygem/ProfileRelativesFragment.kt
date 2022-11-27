@@ -1,39 +1,49 @@
-package app.familygem;
+package app.familygem
 
-import android.content.Intent;
-import android.os.Bundle;
+import app.familygem.detail.FamilyActivity.Companion.getRole
+import app.familygem.detail.FamilyActivity.Companion.writeLineage
+import app.familygem.Memory.Companion.replaceFirst
+import app.familygem.Diagram.Companion.getFamilyLabels
+import app.familygem.detail.FamilyActivity.Companion.findParentFamilyRef
+import app.familygem.detail.FamilyActivity.Companion.chooseLineage
+import app.familygem.detail.FamilyActivity.Companion.disconnect
+import app.familygem.ListOfPeopleFragment.Companion.deletePerson
+import android.os.Bundle
+import app.familygem.R
+import org.folg.gedcom.model.Family
+import android.widget.LinearLayout
+import app.familygem.U
+import app.familygem.detail.FamilyActivity
+import app.familygem.Memory
+import android.content.Intent
+import app.familygem.ProfileActivity
+import android.view.ContextMenu.ContextMenuInfo
+import org.folg.gedcom.model.SpouseFamilyRef
+import app.familygem.IndividualEditorActivity
+import android.content.DialogInterface
+import android.view.*
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import app.familygem.ListOfPeopleFragment
+import app.familygem.constant.Relation
+import app.familygem.constant.intdefs.CARD_KEY
+import app.familygem.constant.intdefs.PROFILE_ID_KEY
+import org.folg.gedcom.model.Person
+import java.util.*
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import android.view.ContextMenu;
-import android.view.LayoutInflater;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import org.folg.gedcom.model.Family;
-import org.folg.gedcom.model.Person;
-import org.folg.gedcom.model.SpouseFamilyRef;
-import java.util.Collections;
-import java.util.List;
-import app.familygem.constant.Relation;
-import app.familygem.detail.FamilyActivity;
-import static app.familygem.Global.gc;
-
-public class ProfileRelativesFragment extends Fragment {
-
-	private View familyView;
-	Person person1;
-
-	@Override
-	public View onCreateView( LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState ) {
-		familyView = inflater.inflate(R.layout.individuo_scheda, container, false);
-		if( gc != null ) {
-			person1 = gc.getPerson( Global.indi);
-			if( person1 != null ) {
-				/* TODO Show / be able to set the pedigree in the geniotrial families, in particular 'adopted' // Mostrare/poter settare nelle famiglie geniotriali il pedigree, in particolare 'adopted'
+class ProfileRelativesFragment : Fragment() {
+    private var familyView: View? = null
+    var person1: Person? = null
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        familyView = inflater.inflate(R.layout.individuo_scheda, container, false)
+        if (Global.gc != null) {
+            person1 = Global.gc!!.getPerson(Global.indi)
+            if (person1 != null) {
+                /* TODO Show / be able to set the pedigree in the geniotrial families, in particular 'adopted' // Mostrare/poter settare nelle famiglie geniotriali il pedigree, in particolare 'adopted'
 				LinearLayout container = vistaFamiglia.findViewById( R.id.contenuto_scheda );
 				for( ParentFamilyRef pfr : person1.getParentFamilyRefs() ) {
 					U.place( container, "Ref", pfr.getRef() );
@@ -42,156 +52,175 @@ public class ProfileRelativesFragment extends Fragment {
 					for( Extension otherTag : U.findExtensions( pfr ) )
 						U.place( container, otherTag.name, otherTag.text );
 				} */
-				// Families of origin: parents and siblings
-				List<Family> listOfFamilies = person1.getParentFamilies(gc);
-				for( Family family : listOfFamilies ) {
-					for( Person father : family.getHusbands(gc) )
-						createCard(father, Relation.PARENT, family);
-					for( Person mother : family.getWives(gc) )
-						createCard(mother, Relation.PARENT, family);
-					for( Person sibling : family.getChildren(gc) ) // only children of the same two parents, not half-siblings
-						if( !sibling.equals(person1) )
-							createCard(sibling, Relation.SIBLING, family);
-				}
-				// Step (half?) brothers and sisters
-				for( Family family : person1.getParentFamilies(gc) ) {
-					for( Person husband : family.getHusbands(gc) ) {
-						List<Family> fatherFamilies = husband.getSpouseFamilies(gc);
-						fatherFamilies.removeAll(listOfFamilies);
-						for( Family fam : fatherFamilies )
-							for( Person stepSibling : fam.getChildren(gc) )
-								createCard(stepSibling, Relation.HALF_SIBLING, fam);
-					}
-					for( Person wife : family.getWives(gc) ) {
-						List<Family> wifeFamilies = wife.getSpouseFamilies(gc);
-						wifeFamilies.removeAll(listOfFamilies);
-						for( Family fam : wifeFamilies )
-							for( Person stepSibling : fam.getChildren(gc) )
-								createCard(stepSibling, Relation.HALF_SIBLING, fam);
-					}
-				}
-				// Spouses and children
-				for( Family family : person1.getSpouseFamilies(gc) ) {
-					for( Person husband : family.getHusbands(gc) )
-						if( !husband.equals(person1) )
-							createCard(husband, Relation.PARTNER, family);
-					for( Person wife : family.getWives(gc) )
-						if( !wife.equals(person1) )
-							createCard(wife, Relation.PARTNER, family);
-					for( Person child : family.getChildren(gc) ) {
-						createCard(child, Relation.CHILD, family);
-					}
-				}
-			}
-		}
-		return familyView;
-	}
+                // Families of origin: parents and siblings
+                val listOfFamilies = person1!!.getParentFamilies(Global.gc)
+                for (family in listOfFamilies) {
+                    for (father in family.getHusbands(Global.gc)) createCard(
+                        father,
+                        Relation.PARENT,
+                        family
+                    )
+                    for (mother in family.getWives(Global.gc)) createCard(
+                        mother,
+                        Relation.PARENT,
+                        family
+                    )
+                    for (sibling in family.getChildren(Global.gc))  // only children of the same two parents, not half-siblings
+                        if (sibling != person1) createCard(sibling, Relation.SIBLING, family)
+                }
+                // Step (half?) brothers and sisters
+                for (family in person1!!.getParentFamilies(Global.gc)) {
+                    for (husband in family.getHusbands(Global.gc)) {
+                        val fatherFamilies = husband.getSpouseFamilies(Global.gc)
+                        fatherFamilies.removeAll(listOfFamilies)
+                        for (fam in fatherFamilies) for (stepSibling in fam.getChildren(Global.gc)) createCard(
+                            stepSibling,
+                            Relation.HALF_SIBLING,
+                            fam
+                        )
+                    }
+                    for (wife in family.getWives(Global.gc)) {
+                        val wifeFamilies = wife.getSpouseFamilies(Global.gc)
+                        wifeFamilies.removeAll(listOfFamilies)
+                        for (fam in wifeFamilies) for (stepSibling in fam.getChildren(Global.gc)) createCard(
+                            stepSibling,
+                            Relation.HALF_SIBLING,
+                            fam
+                        )
+                    }
+                }
+                // Spouses and children
+                for (family in person1!!.getSpouseFamilies(Global.gc)) {
+                    for (husband in family.getHusbands(Global.gc)) if (husband != person1) createCard(
+                        husband,
+                        Relation.PARTNER,
+                        family
+                    )
+                    for (wife in family.getWives(Global.gc)) if (wife != person1) createCard(
+                        wife,
+                        Relation.PARTNER,
+                        family
+                    )
+                    for (child in family.getChildren(Global.gc)) {
+                        createCard(child, Relation.CHILD, family)
+                    }
+                }
+            }
+        }
+        return familyView
+    }
 
-	void createCard(final Person person, Relation relation, Family family) {
-		LinearLayout container = familyView.findViewById(R.id.contenuto_scheda);
-		View personView = U.placeIndividual(container, person,
-				FamilyActivity.getRole(person, family, relation, false) + FamilyActivity.writeLineage(person, family));
-		personView.setOnClickListener(v -> {
-			getActivity().finish(); // Removes the current activity from the stack
-			Memory.replaceFirst(person);
-			Intent intent = new Intent(getContext(), ProfileActivity.class);
-			intent.putExtra("scheda", 2); // apre la scheda famiglia
-			startActivity(intent);
-		});
-		registerForContextMenu(personView);
+    fun createCard(person: Person, relation: Relation?, family: Family?) {
+        val container = familyView!!.findViewById<LinearLayout>(R.id.contenuto_scheda)
+        val personView = U.placeIndividual(
+            container, person,
+            getRole(person, family, relation!!, false) + writeLineage(
+                person!!, family
+            )
+        )
+        personView.setOnClickListener { v: View? ->
+            requireActivity().finish() // Removes the current activity from the stack
+            replaceFirst(person)
+            val intent = Intent(context, ProfileActivity::class.java)
+            intent.putExtra(CARD_KEY, 2) // apre la scheda famiglia
+            startActivity(intent)
+        }
+        registerForContextMenu(personView)
 
-		// The main purpose of this tag is to be able to disconnect the individual from the family
-		// but it is also used below to move multiple marriages:
-		personView.setTag(R.id.tag_famiglia, family);
-	}
+        // The main purpose of this tag is to be able to disconnect the individual from the family
+        // but it is also used below to move multiple marriages:
+        personView.setTag(R.id.tag_famiglia, family)
+    }
 
-	private void moveFamilyReference(int direction) {
-		Collections.swap(person1.getSpouseFamilyRefs(), familyPos, familyPos + direction);
-		U.save(true, person1);
-		refresh();
-	}
+    private fun moveFamilyReference(direction: Int) {
+        Collections.swap(person1!!.spouseFamilyRefs, familyPos, familyPos + direction)
+        U.save(true, person1)
+        refresh()
+    }
 
-	// context Menu
-	private String indiId;
-	private Person person;
-	private Family family;
-	private int familyPos; // position of the marital family for those who have more than one
-	@Override
-	public void onCreateContextMenu(@NonNull ContextMenu menu, View view, ContextMenu.ContextMenuInfo info ) {
-		indiId = (String)view.getTag();
-		person = gc.getPerson(indiId);
-		family = (Family)view.getTag(R.id.tag_famiglia);
-		familyPos = -1;
-		if( person1.getSpouseFamilyRefs().size() > 1 && !family.getChildren(gc).contains(person) ) { // only spouses, not children
-			List<SpouseFamilyRef> refs = person1.getSpouseFamilyRefs();
-			for( SpouseFamilyRef sfr : refs )
-				if( sfr.getRef().equals(family.getId()) )
-					familyPos = refs.indexOf(sfr);
-		}
-		// Better to use numbers that do not conflict with the context menus of the other individual tabs
-		menu.add(0, 300, 0, R.string.diagram);
-		String[] familyLabels = Diagram.getFamilyLabels(getContext(), person, family);
-		if( familyLabels[0] != null )
-			menu.add(0, 301, 0, familyLabels[0]);
-		if( familyLabels[1] != null )
-			menu.add(0, 302, 0, familyLabels[1]);
-		if( familyPos > 0 )
-			menu.add(0, 303, 0, R.string.move_before);
-		if( familyPos >= 0 && familyPos < person1.getSpouseFamilyRefs().size() - 1 )
-			menu.add(0, 304, 0, R.string.move_after);
-		menu.add(0, 305, 0, R.string.modify);
-		if( FamilyActivity.findParentFamilyRef(person, family) != null )
-			menu.add(0, 306, 0, R.string.lineage);
-		menu.add(0, 307, 0, R.string.unlink);
-		if( !person.equals(person1) ) // Here he cannot eliminate himself
-			menu.add(0, 308, 0, R.string.delete);
-	}
+    // context Menu
+    private var indiId: String? = null
+    private var person: Person? = null
+    private var family: Family? = null
+    private var familyPos // position of the marital family for those who have more than one
+            = 0
 
-	@Override
-	public boolean onContextItemSelected(MenuItem item) {
-		int id = item.getItemId();
-		if( id == 300 ) { // Diagram
-			U.askWhichParentsToShow(getContext(), person, 1);
-		} else if( id == 301 ) { // Family as a son
-			U.askWhichParentsToShow(getContext(), person, 2);
-		} else if( id == 302 ) { // Family as a spouse
-			U.askWhichSpouseToShow(getContext(), person, family);
-		} else if( id == 303 ) { // Move up
-			moveFamilyReference(-1);
-		} else if( id == 304 ) { // Move down
-			moveFamilyReference(1);
-		} else if( id == 305 ) { // Modify
-			Intent intent = new Intent(getContext(), IndividualEditorActivity.class);
-			intent.putExtra("idIndividuo", indiId);
-			startActivity(intent);
-		} else if( id == 306 ) { // Lineage
-			FamilyActivity.chooseLineage(getContext(), person, family);
-		} else if( id == 307 ) { // Disconnect from this family
-			FamilyActivity.disconnect(indiId, family);
-			refresh();
-			U.checkFamilyItem(getContext(), this::refresh, false, family);
-			U.save(true, family, person);
-		} else if( id == 308 ) { // Delete
-			new AlertDialog.Builder(getContext()).setMessage(R.string.really_delete_person)
-					.setPositiveButton(R.string.delete, (dialog, i) -> {
-						ListOfPeopleFragment.deletePerson(getContext(), indiId);
-						refresh();
-						U.checkFamilyItem(getContext(), this::refresh, false, family);
-					}).setNeutralButton(R.string.cancel, null).show();
-		} else {
-			return false;
-		}
-		return true;
-	}
+    override fun onCreateContextMenu(menu: ContextMenu, view: View, info: ContextMenuInfo?) {
+        indiId = view.tag as String
+        person = Global.gc!!.getPerson(indiId)
+        family = view.getTag(R.id.tag_famiglia) as Family
+        familyPos = -1
+        if (person1!!.spouseFamilyRefs.size > 1 && !family!!.getChildren(Global.gc)
+                .contains(person)
+        ) { // only spouses, not children
+            val refs = person1!!.spouseFamilyRefs
+            for (sfr in refs) if (sfr.ref == family!!.id) familyPos = refs.indexOf(sfr)
+        }
+        // Better to use numbers that do not conflict with the context menus of the other individual tabs
+        menu.add(0, 300, 0, R.string.diagram)
+        val familyLabels = getFamilyLabels(requireContext(), person, family)
+        if (familyLabels[0] != null) menu.add(0, 301, 0, familyLabels[0])
+        if (familyLabels[1] != null) menu.add(0, 302, 0, familyLabels[1])
+        if (familyPos > 0) menu.add(0, 303, 0, R.string.move_before)
+        if (familyPos >= 0 && familyPos < person1!!.spouseFamilyRefs.size - 1) menu.add(
+            0,
+            304,
+            0,
+            R.string.move_after
+        )
+        menu.add(0, 305, 0, R.string.modify)
+        if (findParentFamilyRef(person!!, family) != null) menu.add(0, 306, 0, R.string.lineage)
+        menu.add(0, 307, 0, R.string.unlink)
+        if (person != person1) // Here he cannot eliminate himself
+            menu.add(0, 308, 0, R.string.delete)
+    }
 
-	/**
-	 * Refresh the contents of the Family Fragment
-	 * */
-	public void refresh() {
-		FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
-		fragmentManager.beginTransaction().detach(this).commit();
-		fragmentManager.beginTransaction().attach(this).commit();
-		requireActivity().invalidateOptionsMenu();
-		// todo update the change date in the Facts tab
-	}
+    override fun onContextItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
+        if (id == 300) { // Diagram
+            U.askWhichParentsToShow(requireContext(), person, 1)
+        } else if (id == 301) { // Family as a son
+            U.askWhichParentsToShow(requireContext(), person, 2)
+        } else if (id == 302) { // Family as a spouse
+            U.askWhichSpouseToShow(requireContext(), person!!, family)
+        } else if (id == 303) { // Move up
+            moveFamilyReference(-1)
+        } else if (id == 304) { // Move down
+            moveFamilyReference(1)
+        } else if (id == 305) { // Modify
+            val intent = Intent(context, IndividualEditorActivity::class.java)
+            intent.putExtra(PROFILE_ID_KEY, indiId)
+            startActivity(intent)
+        } else if (id == 306) { // Lineage
+            chooseLineage(context, person!!, family)
+        } else if (id == 307) { // Disconnect from this family
+            disconnect(indiId!!, family!!)
+            refresh()
+            U.checkFamilyItem(context, { refresh() }, false, family!!)
+            U.save(true, family, person)
+        } else if (id == 308) { // Delete
+            AlertDialog.Builder(requireContext()).setMessage(R.string.really_delete_person)
+                .setPositiveButton(R.string.delete) { dialog: DialogInterface?, i: Int ->
+                    deletePerson(
+                        context, indiId
+                    )
+                    refresh()
+                    U.checkFamilyItem(context, { refresh() }, false, family!!)
+                }.setNeutralButton(R.string.cancel, null).show()
+        } else {
+            return false
+        }
+        return true
+    }
+
+    /**
+     * Refresh the contents of the Family Fragment
+     */
+    fun refresh() {
+        val fragmentManager = requireActivity().supportFragmentManager
+        fragmentManager.beginTransaction().detach(this).commit()
+        fragmentManager.beginTransaction().attach(this).commit()
+        requireActivity().invalidateOptionsMenu()
+        // todo update the change date in the Facts tab
+    }
 }

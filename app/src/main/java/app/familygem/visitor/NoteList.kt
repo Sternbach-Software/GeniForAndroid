@@ -1,27 +1,26 @@
-package app.familygem.visitor;
+package app.familygem.visitor
 
-import org.folg.gedcom.model.Note;
-import org.folg.gedcom.model.NoteContainer;
-import org.folg.gedcom.model.Repository;
-import org.folg.gedcom.model.Source;
-import java.util.ArrayList;
-import java.util.List;
-import app.familygem.Global;
+import app.familygem.Global
+import app.familygem.visitor.TotalVisitor
+import org.folg.gedcom.model.Note
+import org.folg.gedcom.model.NoteContainer
+import org.folg.gedcom.model.Repository
+import org.folg.gedcom.model.Source
+import java.util.ArrayList
 
 /**
  * Visitor producing an ordered map of INLINE notes
- * */
-public class NoteList extends TotalVisitor {
+ */
+class NoteList : TotalVisitor() {
 
-	public List<Note> noteList = new ArrayList<>();
+    val noteList = mutableListOf<Note>()
 
-	@Override
-	boolean visit(Object obj, boolean isProgenitor) {
-		if( obj instanceof NoteContainer
-				&& !(!Global.settings.expert && (obj instanceof Source || obj instanceof Repository)) ) {
-			NoteContainer container = (NoteContainer) obj;
-			noteList.addAll(container.getNotes());
-		}
-		return true;
-	}
+    public override fun visit(obj: Any, isProgenitor: Boolean): Boolean {
+        if (obj is NoteContainer
+            && !(!Global.settings.expert && (obj is Source || obj is Repository))
+        ) {
+            noteList.addAll(obj.notes)
+        }
+        return true
+    }
 }

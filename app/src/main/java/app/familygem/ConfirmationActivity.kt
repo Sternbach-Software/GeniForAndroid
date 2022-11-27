@@ -1,291 +1,261 @@
-package app.familygem;
+package app.familygem
 
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.MenuItem;
-import android.view.View;
-import android.widget.TextView;
-import androidx.appcompat.app.AlertDialog;
-import androidx.cardview.widget.CardView;
-import org.apache.commons.io.FileUtils;
-import org.folg.gedcom.model.ChildRef;
-import org.folg.gedcom.model.Family;
-import org.folg.gedcom.model.Media;
-import org.folg.gedcom.model.Note;
-import org.folg.gedcom.model.ParentFamilyRef;
-import org.folg.gedcom.model.Person;
-import org.folg.gedcom.model.Repository;
-import org.folg.gedcom.model.Source;
-import org.folg.gedcom.model.SpouseFamilyRef;
-import org.folg.gedcom.model.SpouseRef;
-import org.folg.gedcom.model.Submitter;
-import org.folg.gedcom.model.Visitable;
-import java.io.File;
-import java.io.IOException;
-import app.familygem.visitor.MediaContainers;
-import app.familygem.visitor.NoteContainers;
-import app.familygem.visitor.ListOfSourceCitations;
-import app.familygem.visitor.MediaList;
+import app.familygem.Comparison.reset
+import app.familygem.F.mediaPath
+import app.familygem.F.nextAvailableFileName
+import android.os.Bundle
+import androidx.cardview.widget.CardView
+import android.widget.TextView
+import android.content.Intent
+import app.familygem.visitor.NoteContainers
+import app.familygem.visitor.MediaContainers
+import app.familygem.visitor.ListOfSourceCitations
+import android.content.DialogInterface
+import android.view.MenuItem
+import android.view.View
+import androidx.appcompat.app.AlertDialog
+import app.familygem.constant.intdefs.*
+import app.familygem.visitor.MediaList
+import org.apache.commons.io.FileUtils
+import org.folg.gedcom.model.*
+import java.io.File
+import java.io.IOException
 
 /**
  * Final activity when importing news in an existing tree
- * */
-public class ConfirmationActivity extends BaseActivity {
+ */
+class ConfirmationActivity : BaseActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.conferma)
+        if (Comparison.list.isNotEmpty()) {
 
-	@Override
-	protected void onCreate( Bundle bundle ) {
-		super.onCreate( bundle );
-		setContentView( R.layout.conferma );
-		if( !Comparison.getList().isEmpty() ) {
+            // Old tree
+            val card = findViewById<CardView>(R.id.conferma_vecchio)
+            val tree = Global.settings.getTree(Global.settings.openTree)
+            (card.findViewById<View>(R.id.confronto_titolo) as TextView).text = tree!!.title
+            val txt = TreesActivity.writeData(this, tree)
+            (card.findViewById<View>(R.id.confronto_testo) as TextView).text = txt
+            card.findViewById<View>(R.id.confronto_data).visibility = View.GONE
+            var numAdded = 0
+            var numReplaced = 0
+            var numDeleted = 0
+            for (front in Comparison.list) {
+                when (front.destiny) {
+                    OBJ_2_ADDED -> numAdded++
+                    OBJ_2_REPLACES_OBJ -> numReplaced++
+                    OBJ_DELETED -> numDeleted++
+                }
+            }
+            val text =
+                getString(R.string.accepted_news, numAdded + numReplaced + numDeleted, numAdded, numReplaced, numDeleted)
+            (findViewById<View>(R.id.conferma_testo) as TextView).text = text
+            findViewById<View>(R.id.conferma_annulla).setOnClickListener { v: View? ->
+                reset()
+                startActivity(Intent(this@ConfirmationActivity, TreesActivity::class.java))
+            }
+            findViewById<View>(R.id.conferma_ok).setOnClickListener { v: View? ->
+                //Change the id and all refs to objects with canBothAddAndReplace and destiny to add // Modifica l'id e tutti i ref agli oggetti con doppiaOpzione e destino da aggiungere
+                var changed = false
+                for (front in Comparison.list) {
+                    if (front.canBothAddAndReplace && front.destiny == OBJ_2_ADDED) {
+                        changed = true
+                        var newID: String
+                        when (front.type) {
+                            SHARED_NOTE -> {
+                                newID = maxID(Note::class.java)
+                                val n2 = front.object2 as Note
+                                NoteContainers(
+                                    Global.gc2,
+                                    n2,
+                                    newID
+                                ) // updates all refs to the note
+                                n2.id = newID // then update the note id
+                            }
+                            SUBMITTER -> {
+                                newID = maxID(Submitter::class.java)
+                                (front.object2 as Submitter?)!!.id = newID
+                            }
+                            REPOSITORY -> {
+                                newID = maxID(Repository::class.java)
+                                val repo2 = front.object2 as Repository?
+                                for (source in Global.gc2.sources) if (source.repositoryRef?.ref == repo2!!.id) source.repositoryRef.ref =
+                                    newID
+                                repo2!!.id = newID
+                            }
+                            SHARED_MEDIA_TYPE -> {
+                                newID = maxID(Media::class.java)
+                                val m2 = front.object2 as Media?
+                                MediaContainers(Global.gc2, m2!!, newID)
+                                m2.id = newID
+                            }
+                            SOURCE_TYPE -> {
+                                newID = maxID(Source::class.java)
+                                val s2 = front.object2 as Source?
+                                val sourceCitations = ListOfSourceCitations(Global.gc2, s2!!.id)
+                                for (sc in sourceCitations.list) sc.citation!!.ref = newID
+                                s2.id = newID
+                            }
+                            PERSON_TYPE -> {
+                                newID = maxID(Person::class.java)
+                                val p2 = front.object2 as Person?
+                                for (fam in Global.gc2.families) {
+                                    for (sr in fam.husbandRefs) if (sr.ref == p2!!.id) sr.ref =
+                                        newID
+                                    for (sr in fam.wifeRefs) if (sr.ref == p2!!.id) sr.ref = newID
+                                    for (cr in fam.childRefs) if (cr.ref == p2!!.id) cr.ref = newID
+                                }
+                                p2!!.id = newID
+                            }
+                            FAMILY_TYPE -> {
+                                newID = maxID(Family::class.java)
+                                val f2 = front.object2 as Family?
+                                for (per in Global.gc2.people) {
+                                    for (pfr in per.parentFamilyRefs) if (pfr.ref == f2!!.id) pfr.ref =
+                                        newID
+                                    for (sfr in per.spouseFamilyRefs) if (sfr.ref == f2!!.id) sfr.ref =
+                                        newID
+                                }
+                                f2!!.id = newID
+                            }
+                        }
+                    }
+                }
+                if (changed) U.saveJson(Global.gc2, Global.treeId2)
 
-			// Old tree
-			CardView card = findViewById( R.id.conferma_vecchio );
-			Settings.Tree tree = Global.settings.getTree( Global.settings.openTree);
-			((TextView)card.findViewById(R.id.confronto_titolo )).setText( tree.title);
-			String txt = TreesActivity.writeData( this, tree);
-			((TextView)card.findViewById(R.id.confronto_testo )).setText( txt );
-			card.findViewById( R.id.confronto_data ).setVisibility( View.GONE );
+                // Regular addition / replacement / deletion of records from tree2 to tree
+                for (front in Comparison.list) {
+                    when (front.type) {
+                        SHARED_NOTE -> {
+                            if (front.destiny.isObj1Removed) Global.gc.notes.remove(front.object1)
+                            if (front.destiny.isObj2Added) {
+                                Global.gc.addNote(front.object2 as Note?)
+                                copyAllFiles(front.object2)
+                            }
+                        }
+                        SUBMITTER -> {
+                            if (front.destiny.isObj1Removed) Global.gc.submitters.remove(front.object1)
+                            if (front.destiny.isObj2Added) Global.gc.addSubmitter(front.object2 as Submitter?)
+                        }
+                        REPOSITORY -> {
+                            if (front.destiny.isObj1Removed) Global.gc.repositories.remove(front.object1)
+                            if (front.destiny.isObj2Added) {
+                                Global.gc.addRepository(front.object2 as Repository?)
+                                copyAllFiles(front.object2)
+                            }
+                        }
+                        SHARED_MEDIA_TYPE -> {
+                            if (front.destiny.isObj1Removed) Global.gc.media.remove(front.object1)
+                            if (front.destiny.isObj2Added) {
+                                Global.gc.addMedia(front.object2 as Media?)
+                                checkIfShouldCopyFiles(front.object2 as Media?)
+                            }
+                        }
+                        SOURCE_TYPE -> {
+                            if (front.destiny.isObj1Removed) Global.gc.sources.remove(front.object1)
+                            if (front.destiny.isObj2Added) {
+                                Global.gc.addSource(front.object2 as Source?)
+                                copyAllFiles(front.object2)
+                            }
+                        }
+                        PERSON_TYPE -> {
+                            if (front.destiny.isObj1Removed) Global.gc.people.remove(front.object1)
+                            if (front.destiny.isObj2Added) {
+                                Global.gc.addPerson(front.object2 as Person?)
+                                copyAllFiles(front.object2)
+                            }
+                        }
+                        FAMILY_TYPE -> {
+                            if (front.destiny.isObj1Removed) Global.gc.families.remove(front.object1)
+                            if (front.destiny.isObj2Added) {
+                                Global.gc.addFamily(front.object2 as Family?)
+                                copyAllFiles(front.object2)
+                            }
+                        }
+                    }
+                }
+                U.saveJson(Global.gc, Global.settings.openTree)
 
-			int add = 0;
-			int replace = 0;
-			int delete = 0;
-			for( Comparison.Front front : Comparison.getList() ) {
-				switch( front.destiny) {
-					case 1: add++;
-						break;
-					case 2: replace++;
-						break;
-					case 3: delete++;
-				}
-			}
-			String text = getString( R.string.accepted_news, add+replace+delete, add, replace, delete );
-			((TextView)findViewById(R.id.conferma_testo )).setText( text );
+                // If he has done everything he proposes to delete the imported tree (??)//Se ha fatto tutto propone di eliminare l'albero importato
+                val allOK = Comparison.list.none { it.destiny == NOTHING }
+                if (allOK) {
+                    Global.settings.getTree(Global.treeId2)!!.grade = NO_NOVELTIES
+                    Global.settings.save()
+                    AlertDialog.Builder(this@ConfirmationActivity)
+                        .setMessage(R.string.all_imported_delete)
+                        .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
+                            TreesActivity.deleteTree(this, Global.treeId2)
+                            done()
+                        }.setNegativeButton(R.string.no) { _: DialogInterface?, _: Int -> done() }
+                        .setOnCancelListener { done() }.show()
+                } else done()
+            }
+        } else onBackPressed()
+    }
 
-			findViewById(R.id.conferma_annulla ).setOnClickListener( v -> {
-				Comparison.reset();
-				startActivity( new Intent( ConfirmationActivity.this, TreesActivity.class ) );
-			});
+    /**
+     * Opens the tree list
+     */
+    fun done() {
+        reset()
+        startActivity(Intent(this, TreesActivity::class.java))
+    }
 
-			findViewById(R.id.conferma_ok ).setOnClickListener( v -> {
-				//Change the id and all refs to objects with canBothAddAndReplace and destiny to add // Modifica l'id e tutti i ref agli oggetti con doppiaOpzione e destino da aggiungere
-				boolean changed = false;
-				for( Comparison.Front front : Comparison.getList() ) {
-					if( front.canBothAddAndReplace && front.destiny == 1 ) {
-						String newID;
-						changed = true;
-						switch( front.type) {
-							case 1: // Note
-								newID = maxID( Note.class );
-								Note n2 = (Note) front.object2;
-								new NoteContainers( Global.gc2, n2, newID ); // updates all refs to the note
-								n2.setId( newID ); // then update the note id
-								break;
-							case 2: // Submitter
-								newID = maxID( Submitter.class );
-								((Submitter)front.object2).setId( newID );
-								break;
-							case 3: // Repository
-								newID = maxID( Repository.class );
-								Repository repo2 = (Repository)front.object2;
-								for( Source fon : Global.gc2.getSources() )
-									if( fon.getRepositoryRef() != null && fon.getRepositoryRef().getRef().equals(repo2.getId()) )
-										fon.getRepositoryRef().setRef( newID );
-								repo2.setId( newID );
-								break;
-							case 4: // Media
-								newID = maxID( Media.class );
-								Media m2 = (Media) front.object2;
-								new MediaContainers( Global.gc2, m2, newID );
-								m2.setId( newID );
-								break;
-							case 5: // Source
-								newID = maxID( Source.class );
-								Source s2 = (Source) front.object2;
-								ListOfSourceCitations sourceCitations = new ListOfSourceCitations( Global.gc2, s2.getId() );
-								for( ListOfSourceCitations.Triplet tri : sourceCitations.list)
-									tri.citation.setRef( newID );
-								s2.setId( newID );
-								break;
-							case 6: // Person
-								newID = maxID( Person.class );
-								Person p2 = (Person) front.object2;
-								for( Family fam : Global.gc2.getFamilies() ) {
-									for( SpouseRef sr : fam.getHusbandRefs() )
-										if( sr.getRef().equals(p2.getId()) )
-											sr.setRef( newID );
-									for( SpouseRef sr : fam.getWifeRefs() )
-										if( sr.getRef().equals(p2.getId()) )
-											sr.setRef( newID );
-									for( ChildRef cr : fam.getChildRefs() )
-										if( cr.getRef().equals(p2.getId()) )
-											cr.setRef( newID );
-								}
-								p2.setId( newID );
-								break;
-							case 7: // Family
-								newID = maxID( Family.class );
-								Family f2 = (Family) front.object2;
-								for( Person per : Global.gc2.getPeople() ) {
-									for( ParentFamilyRef pfr : per.getParentFamilyRefs() )
-										if( pfr.getRef().equals(f2.getId()) )
-											pfr.setRef( newID );
-									for( SpouseFamilyRef sfr : per.getSpouseFamilyRefs() )
-										if( sfr.getRef().equals(f2.getId()) )
-											sfr.setRef( newID );
-								}
-								f2.setId( newID );
-						}
-					}
-				}
-				if( changed )
-					U.saveJson( Global.gc2, Global.treeId2);
+    /**
+     * Calculate the highest id for a certain class by comparing new and old tree
+     * Calcola l'id più alto per una certa classe confrontando albero nuovo e vecchio
+     */
+    private fun maxID(clazz: Class<*>?): String {
+        val id = U.newID(Global.gc, clazz) // new id against old tree records
+        val id2 = U.newID(Global.gc2, clazz) // and of the new tree
+        return if (id.substring(1).toInt() > id2.substring(1).toInt()) // removes the initial letter
+            id else id2
+    }
 
-				// Regular addition / replacement / deletion of records from tree2 to tree
-				for( Comparison.Front front : Comparison.getList() ) {
-					switch( front.type) {
-						case 1: // Note
-							if( front.destiny > 1 )
-								Global.gc.getNotes().remove( front.object );
-							if( front.destiny > 0 && front.destiny < 3 ) {
-								Global.gc.addNote( (Note) front.object2 );
-								copyAllFiles( front.object2 );
-							}
-							break;
-						case 2: // Submitter
-							if( front.destiny > 1 )
-								Global.gc.getSubmitters().remove( front.object );
-							if( front.destiny > 0 && front.destiny < 3 )
-								Global.gc.addSubmitter( (Submitter) front.object2 );
-							break;
-						case 3: // Repository
-							if( front.destiny > 1 )
-								Global.gc.getRepositories().remove( front.object );
-							if( front.destiny > 0 && front.destiny < 3 ) {
-								Global.gc.addRepository( (Repository) front.object2 );
-								copyAllFiles( front.object2 );
-							}
-							break;
-						case 4: // Media
-							if( front.destiny > 1 )
-								Global.gc.getMedia().remove( front.object );
-							if( front.destiny > 0 && front.destiny < 3 ) {
-								Global.gc.addMedia( (Media) front.object2 );
-								checkIfShouldCopyFiles( (Media)front.object2 );
-							}
-							break;
-						case 5: // Source
-							if( front.destiny > 1 )
-								Global.gc.getSources().remove( front.object );
-							if( front.destiny > 0 && front.destiny < 3 ) {
-								Global.gc.addSource( (Source) front.object2 );
-								copyAllFiles( front.object2 );
-							}
-							break;
-						case 6: // Person
-							if( front.destiny > 1 )
-								Global.gc.getPeople().remove( front.object );
-							if( front.destiny > 0 && front.destiny < 3 ) {
-								Global.gc.addPerson( (Person) front.object2 );
-								copyAllFiles( front.object2 );
-							}
-							break;
-						case 7: // Family
-							if( front.destiny > 1 )
-								Global.gc.getFamilies().remove( front.object );
-							if( front.destiny > 0 && front.destiny < 3 ) {
-								Global.gc.addFamily( (Family) front.object2 );
-								copyAllFiles( front.object2 );
-							}
-					}
-				}
-				U.saveJson( Global.gc, Global.settings.openTree);
+    /**
+     * If a new object has media, consider copying the files to the old tree image folder
+     * still update the link in the Media
+     *
+     * Se un object nuovo ha dei media, valuta se copiare i file nella cartella immagini dell'albero vecchio
+     * comunque
+     * aggiorna il collegamento nel Media
+     */
+    private fun copyAllFiles(any: Any?) {
+        val searchMedia = MediaList(Global.gc2, LOCAL_MEDIA)
+        (any as Visitable).accept(searchMedia)
+        for (media in searchMedia.list) {
+            checkIfShouldCopyFiles(media)
+        }
+    }
 
-				// If he has done everything he proposes to delete the imported tree (?)//Se ha fatto tutto propone di eliminare l'albero importato
-				boolean allOK = true;
-				for( Comparison.Front front : Comparison.getList() )
-					if( front.destiny == 0 ) {
-						allOK = false;
-						break;
-					}
-				if( allOK ) {
-					Global.settings.getTree( Global.treeId2).grade = 30;
-					Global.settings.save();
-					new AlertDialog.Builder( ConfirmationActivity.this )
-							.setMessage( R.string.all_imported_delete )
-							.setPositiveButton( android.R.string.ok, (d, i) -> {
-								TreesActivity.deleteTree( this, Global.treeId2);
-								done();
-							}).setNegativeButton( R.string.no, (d, i) -> done() )
-							.setOnCancelListener( dialog -> done() ).show();
-				} else
-					done();
-			});
-		} else onBackPressed();
-	}
+    private fun checkIfShouldCopyFiles(media: Media?) {
+        val path = mediaPath(Global.treeId2, media!!)
+        if (path != null) {
+            val filePath = File(path)
+            val memoryDir =
+                getExternalFilesDir(Global.settings.openTree.toString()) // it should stay out of the loop but oh well //dovrebbe stare fuori dal loop ma vabè
+            val nameFile = filePath.name
+            val twinFile = File(memoryDir!!.absolutePath, nameFile)
+            if (twinFile.isFile // if the corresponding file already exists
+                && twinFile.lastModified() == filePath.lastModified() // and have the same date
+                && twinFile.length() == filePath.length()
+            ) { // and the same size
+                // Then use the already existing file
+                media.file = twinFile.absolutePath
+            } else { // Otherwise copy the new file
+                val destinationFile = nextAvailableFileName(memoryDir.absolutePath, nameFile)
+                try {
+                    FileUtils.copyFile(filePath, destinationFile)
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+                media.file = destinationFile.absolutePath
+            }
+        }
+    }
 
-	/**
-	 * Opens the tree list
-	 * */
-	void done() {
-		Comparison.reset();
-		startActivity( new Intent( this, TreesActivity.class ) );
-	}
-
-	/**
-	 * Calculate the highest id for a certain class by comparing new and old tree
-	 * Calcola l'id più alto per una certa classe confrontando albero nuovo e vecchio
-	 * */
-	String maxID(Class classe ) {
-		String id = U.newID( Global.gc, classe ); // new id against old tree records
-		String id2 = U.newID( Global.gc2, classe ); // and of the new tree
-		if( Integer.parseInt( id.substring(1) ) > Integer.parseInt( id2.substring(1) ) ) // removes the initial letter
-			return id;
-		else
-			return id2;
-	}
-
-	/**
-	 * If a new object has media, consider copying the files to the old tree image folder
-	 * still update the link in the Media
-	 *
-	 * Se un object nuovo ha dei media, valuta se copiare i file nella cartella immagini dell'albero vecchio
-	 * comunque
-	 * aggiorna il collegamento nel Media
-	 * */
-	void copyAllFiles(Object object ) {
-		MediaList searchMedia = new MediaList( Global.gc2, 2 );
-		((Visitable)object).accept( searchMedia );
-		for( Media media : searchMedia.list) {
-			checkIfShouldCopyFiles( media );
-		}
-	}
-	void checkIfShouldCopyFiles(Media media ) {
-		String path = F.mediaPath( Global.treeId2, media );
-		if( path != null ) {
-			File filePath = new File( path );
-			File memoryDir = getExternalFilesDir( String.valueOf(Global.settings.openTree) ); // it should stay out of the loop but oh well //dovrebbe stare fuori dal loop ma vabè
-			String nameFile = path.substring( path.lastIndexOf('/') + 1 );
-			File twinFile = new File( memoryDir.getAbsolutePath(), nameFile );
-			if( twinFile.isFile()	// if the corresponding file already exists
-					&& twinFile.lastModified() == filePath.lastModified() // and have the same date
-					&& twinFile.length() == filePath.length() ) { // and the same size
-				// Then use the already existing file
-				media.setFile( twinFile.getAbsolutePath() );
-			} else { // Otherwise copy the new file
-				File destinationFile = F.nextAvailableFileName( memoryDir.getAbsolutePath(), nameFile );
-				try {
-					FileUtils.copyFile( filePath, destinationFile );
-				} catch( IOException e ) {
-					e.printStackTrace();
-				}
-				media.setFile( destinationFile.getAbsolutePath() );
-			}
-		}
-	}
-
-	@Override
-	public boolean onOptionsItemSelected( MenuItem i ) {
-		onBackPressed();
-		return true;
-	}
+    override fun onOptionsItemSelected(i: MenuItem): Boolean {
+        onBackPressed()
+        return true
+    }
 }

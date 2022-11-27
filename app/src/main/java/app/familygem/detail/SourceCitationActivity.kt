@@ -41,7 +41,7 @@ class SourceCitationActivity : DetailActivity() {
     }
 
     override fun delete() {
-        val container = Memory.getSecondToLastObject()
+        val container = Memory.secondToLastObject
         if (container is Note) // Note doesn't extend SourceCitationContainer
             container.sourceCitations.remove(c)
         else

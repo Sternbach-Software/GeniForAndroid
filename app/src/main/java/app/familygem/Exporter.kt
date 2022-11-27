@@ -1,162 +1,159 @@
-package app.familygem;
+package app.familygem
 
-import android.content.Context;
-import android.content.Intent;
-import android.database.Cursor;
-import android.net.Uri;
-import android.provider.OpenableColumns;
+import android.content.Context
+import app.familygem.F.mediaPath
+import app.familygem.F.mediaUri
+import org.folg.gedcom.model.Gedcom
+import app.familygem.TreesActivity
+import app.familygem.R
+import org.folg.gedcom.visitors.GedcomWriter
+import android.content.Intent
+import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
+import app.familygem.Settings.ZippedTree
+import app.familygem.F
+import app.familygem.NewTreeActivity
+import app.familygem.U
+import android.provider.OpenableColumns
+import app.familygem.constant.intdefs.ALL_MEDIA
+import app.familygem.visitor.MediaList
+import org.apache.commons.io.FileUtils
+import org.folg.gedcom.model.Media
+import java.io.File
+import java.io.IOException
+import java.lang.Exception
+import java.util.HashMap
+import java.util.HashSet
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
-import androidx.documentfile.provider.DocumentFile;
-import org.apache.commons.io.FileUtils;
-import org.folg.gedcom.model.Gedcom;
-import org.folg.gedcom.model.Header;
-import org.folg.gedcom.model.Media;
-import org.folg.gedcom.model.Name;
-import org.folg.gedcom.model.Person;
-import org.folg.gedcom.visitors.GedcomWriter;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-
-import app.familygem.visitor.MediaList;
 /**
  * Utility class to export a tree as GEDCOM or ZIP backup
- * */
-public class Exporter {
-
-    private final Context context;
-    private int treeId;
-    private Gedcom gc; //TODO rename to gedcom
-    private Uri targetUri;
-    public String errorMessage; // Message of possible error
-    public String successMessage;// Message of the obtained result
-
-    Exporter(Context context) {
-        this.context = context;
-    }
+ */
+class Exporter internal constructor(private val context: Context) {
+    private var treeId = 0
+    private var gc //TODO rename to gedcom
+            : Gedcom? = null
+    private var targetUri: Uri? = null
+    var errorMessage // Message of possible error
+            : String? = null
+    var successMessage // Message of the obtained result
+            : String? = null
 
     /**
      * Opens the Json tree and returns true if successful
      */
-    public boolean openTree(int treeId) {
-        this.treeId = treeId;
-        gc = TreesActivity.openGedcomTemporarily(treeId, true);
-        if (gc == null) {
-            return error(R.string.no_useful_data);
-        }
-        return true;
+    fun openTree(treeId: Int): Boolean {
+        this.treeId = treeId
+        gc = TreesActivity.openGedcomTemporarily(treeId, true)
+        return if (gc == null) {
+            error(R.string.no_useful_data)
+        } else true
     }
 
     /**
      * Writes only GEDCOM in the URI
      * Scrive il solo GEDCOM nell'URI
      */
-    public boolean exportGedcom(Uri targetUri) {
-        this.targetUri = targetUri;
-        updateHeader(extractFilename(targetUri));
-        optimizeGedcom();
-        GedcomWriter writer = new GedcomWriter();
-        File gedcomFile = new File(context.getCacheDir(), "temp.ged");
+    fun exportGedcom(targetUri: Uri): Boolean {
+        this.targetUri = targetUri
+        updateHeader(extractFilename(targetUri))
+        optimizeGedcom()
+        val writer = GedcomWriter()
+        val gedcomFile = File(context.cacheDir, "temp.ged")
         try {
-            writer.write(gc, gedcomFile);
-            OutputStream out = context.getContentResolver().openOutputStream(targetUri);
-            FileUtils.copyFile(gedcomFile, out);
-            out.flush();
-            out.close();
-        } catch (Exception e) {
-            return error(e.getLocalizedMessage());
+            writer.write(gc, gedcomFile)
+            val out = context.contentResolver.openOutputStream(targetUri)
+            FileUtils.copyFile(gedcomFile, out)
+            out!!.flush()
+            out.close()
+        } catch (e: Exception) {
+            return error(e.localizedMessage)
         }
 
-		// Make the file visible from Windows
-		// But it seems ineffective in KitKat where the file remains invisible // Ma pare inefficace in KitKat in cui il file rimane invisibile
-        context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, targetUri));
-        Global.gc = TreesActivity.readJson(treeId); // Reset the changes
-        return success(R.string.gedcom_exported_ok);
+        // Make the file visible from Windows
+        // But it seems ineffective in KitKat where the file remains invisible // Ma pare inefficace in KitKat in cui il file rimane invisibile
+        context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, targetUri))
+        Global.gc = TreesActivity.readJson(treeId) // Reset the changes
+        return success(R.string.gedcom_exported_ok)
     }
 
     /**
      * Writes the GEDCOM with the media in a ZIP file
      */
-    public boolean exportGedcomToZip(Uri targetUri) {
-        this.targetUri = targetUri;
+    fun exportGedcomToZip(targetUri: Uri?): Boolean {
+        this.targetUri = targetUri
         // Create the GEDCOM file
-        String title = Global.settings.getTree(treeId).title;
-        String filename = title.replaceAll("[\\\\/:*?\"<>|'$]", "_") + ".ged";
-        updateHeader(filename);
-        optimizeGedcom();
-        GedcomWriter writer = new GedcomWriter();
-        File fileGc = new File(context.getCacheDir(), filename);
+        val title = Global.settings.getTree(treeId)!!.title
+        val filename = title.replace("[\\\\/:*?\"<>|'$]".toRegex(), "_") + ".ged"
+        updateHeader(filename)
+        optimizeGedcom()
+        val writer = GedcomWriter()
+        val fileGc = File(context.cacheDir, filename)
         try {
-            writer.write(gc, fileGc);
-        } catch (Exception e) {
-            return error(e.getLocalizedMessage());
+            writer.write(gc, fileGc)
+        } catch (e: Exception) {
+            return error(e.localizedMessage)
         }
-        DocumentFile gedcomDocument = DocumentFile.fromFile(fileGc);
+        val gedcomDocument = DocumentFile.fromFile(fileGc)
         // Add the GEDCOM to the media file collection
-        Map<DocumentFile, Integer> collection = collectMedia();
-        collection.put(gedcomDocument, 0);
-        if (!createZipFile(collection))
-            return false;
-        context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, targetUri));
-        Global.gc = TreesActivity.readJson(treeId);
-        return success(R.string.zip_exported_ok);
+        val collection = collectMedia()
+        collection[gedcomDocument] = 0
+        if (!createZipFile(collection)) return false
+        context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, targetUri))
+        Global.gc = TreesActivity.readJson(treeId)
+        return success(R.string.zip_exported_ok)
     }
 
     /**
      * Create a zipped file with the tree, settings and media
      */
-    public boolean exportBackupZip(String root, int grade, Uri targetUri) {
-        this.targetUri = targetUri;
+    fun exportBackupZip(root: String?, grade: Int, targetUri: Uri?): Boolean {
+        var root = root
+        var grade = grade
+        this.targetUri = targetUri
         // Media
-        Map<DocumentFile, Integer> files = collectMedia();
+        val files = collectMedia()
         // Tree's json
-        File fileTree = new File(context.getFilesDir(), treeId + ".json");
-        files.put(DocumentFile.fromFile(fileTree), 1);
+        val fileTree = File(context.filesDir, "$treeId.json")
+        files[DocumentFile.fromFile(fileTree)] = 1
         // Preference's json
-        Settings.Tree tree = Global.settings.getTree(treeId);
-        if (root == null) root = tree.root;
-        if (grade < 0) grade = tree.grade;
+        val tree = Global.settings.getTree(treeId)
+        if (root == null) root = tree!!.root
+        if (grade < 0) grade = tree!!.grade
         // String titleTree, String root, int degree can arrive other than Share // String titoloAlbero, String radice, int grado possono arrivare diversi da Condividi
-        Settings.ZippedTree settings = new Settings.ZippedTree(
-                tree.title, tree.persons, tree.generations, root, tree.shares, grade);
-        File fileSettings = settings.save();
-        files.put(DocumentFile.fromFile(fileSettings), 0);
-        if (!createZipFile(files))
-            return false;
-        context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, targetUri));
-        return success(R.string.zip_exported_ok);
+        val settings = ZippedTree(
+            tree!!.title, tree.persons, tree.generations, root!!, tree.shares!!, grade
+        )
+        val fileSettings = settings.save()
+        files[DocumentFile.fromFile(fileSettings)] = 0
+        if (!createZipFile(files)) return false
+        context.sendBroadcast(Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, targetUri))
+        return success(R.string.zip_exported_ok)
     }
 
     /**
      * Returns the number of media files to attach
      */
-    public int numMediaFilesToAttach() {
-        MediaList mediaList = new MediaList(gc, 0);
-        gc.accept(mediaList);
-        int numFiles = 0;
-        for (Media med : mediaList.list) {
-            if (F.mediaPath(treeId, med) != null || F.mediaUri(treeId, med) != null)
-                numFiles++;
+    fun numMediaFilesToAttach(): Int {
+        val mediaList = MediaList(gc!!, ALL_MEDIA)
+        gc!!.accept(mediaList)
+        var numFiles = 0
+        for (med in mediaList.list) {
+            if (mediaPath(treeId, med) != null || mediaUri(treeId, med) != null) numFiles++
         }
-        return numFiles;
+        return numFiles
     }
 
     /**
      * Receives the id of a tree and gets a DocumentFile Map of the media that it manages to find
-     * <p>
+     *
+     *
      * Riceve l'id di un albero e arriva una Map di DocumentFile dei media che riesce a rastrellare
      */
-    private Map<DocumentFile, Integer> collectMedia() {
-        MediaList mediaList = new MediaList(gc, 0);
-        gc.accept(mediaList);
+    private fun collectMedia(): MutableMap<DocumentFile?, Int> {
+        val mediaList = MediaList(gc!!, ALL_MEDIA)
+        gc!!.accept(mediaList)
 
         /* It happens that different Media point to the same file.
          * And it could also happen that different paths end up with the same filenames,
@@ -169,136 +166,129 @@ public class Exporter {
          *   ad es. 'percorsoA/img.jpg' 'percorsoB/img.jpg'
          *   Bisogna evitare che nei media dello ZIP finiscano file con lo stesso nome.
          *   Questo loop crea una lista di percorsi con nome file univoci */
-
-        Set<String> paths = new HashSet<>();
-        Set<String> onlyFileNames = new HashSet<>(); // Control file names //Nomi file di controllo
-        for (Media med : mediaList.list) {
-            String path = med.getFile();
+        val paths: MutableSet<String> = HashSet()
+        val onlyFileNames: MutableSet<String> =
+            HashSet() // Control file names //Nomi file di controllo
+        for (med in mediaList.list) {
+            val path = med.file
             if (path != null && !path.isEmpty()) {
-                String fileName = path.replace('\\', '/');
-                if (fileName.lastIndexOf('/') > -1)
-                    fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
-                if (!onlyFileNames.contains(fileName))
-                    paths.add(path);
-                onlyFileNames.add(fileName);
+                var fileName = path.replace('\\', '/')
+                if (fileName.lastIndexOf('/') > -1) fileName =
+                    fileName.substring(fileName.lastIndexOf('/') + 1)
+                if (!onlyFileNames.contains(fileName)) paths.add(path)
+                onlyFileNames.add(fileName)
             }
         }
-        Map<DocumentFile, Integer> collection = new HashMap<>();
-        for (String path : paths) {
-            Media med = new Media();
-            med.setFile(path);
+        val collection: MutableMap<DocumentFile?, Int> = HashMap()
+        for (path in paths) {
+            val med = Media()
+            med.file = path
             // Paths
-            String mediaPath = F.mediaPath(treeId, med);
-            if (mediaPath != null)
-                collection.put(DocumentFile.fromFile(new File(mediaPath)), 2); // todo canRead() ?
+            val mediaPath = mediaPath(treeId, med)
+            if (mediaPath != null) collection[DocumentFile.fromFile(File(mediaPath))] =
+                2 // todo canRead() ?
             else { // URIs
-                Uri uriMedia = F.mediaUri(treeId, med);
-                if (uriMedia != null)
-                    collection.put(DocumentFile.fromSingleUri(context, uriMedia), 2);
+                val uriMedia = mediaUri(treeId, med)
+                if (uriMedia != null) collection[DocumentFile.fromSingleUri(context, uriMedia)] = 2
             }
         }
-        return collection;
+        return collection
     }
 
-    private void updateHeader(String gedcomFilename) {
-        Header header = gc.getHeader();
-        if (header == null)
-            gc.setHeader(NewTreeActivity.createHeader(gedcomFilename));
-        else {
-            header.setFile(gedcomFilename);
-            header.setDateTime(U.actualDateTime());
+    private fun updateHeader(gedcomFilename: String?) {
+        val header = gc!!.header
+        if (header == null) gc!!.header = NewTreeActivity.createHeader(gedcomFilename) else {
+            header.file = gedcomFilename
+            header.dateTime = U.actualDateTime()
         }
     }
 
     /**
-	 * Enhance GEDCOM for export
-	 * */
-    void optimizeGedcom() {
-		// Value of names from given and surname
-        for (Person pers : gc.getPeople()) {
-            for (Name n : pers.getNames())
-                if (n.getValue() == null && (n.getPrefix() != null || n.getGiven() != null
-                        || n.getSurname() != null || n.getSuffix() != null)) {
-                    String epiteto = ""; //TODO replace with stringbuilder
-                    if (n.getPrefix() != null)
-                        epiteto = n.getPrefix();
-                    if (n.getGiven() != null)
-                        epiteto += " " + n.getGiven();
-                    if (n.getSurname() != null)
-                        epiteto += " /" + n.getSurname() + "/";
-                    if (n.getSuffix() != null)
-                        epiteto += " " + n.getSuffix();
-                    n.setValue(epiteto.trim());
-                }
+     * Enhance GEDCOM for export
+     */
+    fun optimizeGedcom() {
+        // Value of names from given and surname
+        for (pers in gc!!.people) {
+            for (n in pers.names) if (n.value == null && (n.prefix != null || n.given != null || n.surname != null || n.suffix != null)) {
+                var epiteto = "" //TODO replace with stringbuilder
+                if (n.prefix != null) epiteto = n.prefix
+                if (n.given != null) epiteto += " " + n.given
+                if (n.surname != null) epiteto += " /" + n.surname + "/"
+                if (n.suffix != null) epiteto += " " + n.suffix
+                n.value = epiteto.trim { it <= ' ' }
+            }
         }
     }
 
     /**
-	 * Extracts only the filename from a URI
-	 * */
-    private String extractFilename(Uri uri) {
+     * Extracts only the filename from a URI
+     */
+    private fun extractFilename(uri: Uri): String? {
         // file://
-        if (uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("file")) {
-            return uri.getLastPathSegment();
+        if (uri.scheme != null && uri.scheme.equals("file", ignoreCase = true)) {
+            return uri.lastPathSegment
         }
         // Cursor (this usually works)
-        Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
+        val cursor = context.contentResolver.query(uri, null, null, null, null)
         if (cursor != null && cursor.moveToFirst()) {
-            int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-            String filename = cursor.getString(index);
-            cursor.close();
-            if (filename != null) return filename;
+            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            val filename = cursor.getString(index)
+            cursor.close()
+            if (filename != null) return filename
         }
         // DocumentFile
-        DocumentFile document = DocumentFile.fromSingleUri(context, targetUri);
-        String filename = document.getName();
-        if (filename != null) return filename;
+        val document = DocumentFile.fromSingleUri(context, targetUri!!)
+        val filename = document!!.name
+        return filename ?: "tree.ged"
         // Not much else to do
-        return "tree.ged";
     }
 
-	/**
-	 * Get the list of DocumentFiles and put them in a ZIP file written to the targetUri
-	 * Return error message or null if all is well
-	 * */
-	boolean createZipFile(Map<DocumentFile, Integer> files) {
-        byte[] buffer = new byte[128];
+    /**
+     * Get the list of DocumentFiles and put them in a ZIP file written to the targetUri
+     * Return error message or null if all is well
+     */
+    fun createZipFile(files: Map<DocumentFile?, Int>): Boolean {
+        val buffer = ByteArray(128)
         try {
-            ZipOutputStream zos = new ZipOutputStream(context.getContentResolver().openOutputStream(targetUri));
-            for (Map.Entry<DocumentFile, Integer> fileType : files.entrySet()) {
-                DocumentFile file = fileType.getKey();
-                InputStream input = context.getContentResolver().openInputStream(file.getUri());
-                String filename = file.getName();   //Files that are not renamed ('settings.json', 'family.ged') // File che non vengono rinominati ('settings.json', 'famiglia.ged')
-                if (fileType.getValue() == 1)
-                    filename = "tree.json";
-                else if (fileType.getValue() == 2)
-                    filename = "media/" + file.getName();
-                zos.putNextEntry(new ZipEntry(filename));
-                int read;
-                while ((read = input.read(buffer)) != -1) {
-                    zos.write(buffer, 0, read);
+            val zos = ZipOutputStream(
+                context.contentResolver.openOutputStream(
+                    targetUri!!
+                )
+            )
+            for ((file, value) in files) {
+                val input = context.contentResolver.openInputStream(
+                    file!!.uri
+                )
+                var filename =
+                    file.name //Files that are not renamed ('settings.json', 'family.ged') // File che non vengono rinominati ('settings.json', 'famiglia.ged')
+                if (value == 1) filename = "tree.json" else if (value == 2) filename =
+                    "media/" + file.name
+                zos.putNextEntry(ZipEntry(filename))
+                var read: Int
+                while (input!!.read(buffer).also { read = it } != -1) {
+                    zos.write(buffer, 0, read)
                 }
-                zos.closeEntry();
-                input.close();
+                zos.closeEntry()
+                input.close()
             }
-            zos.close();
-        } catch (IOException e) {
-            return error(e.getLocalizedMessage());
+            zos.close()
+        } catch (e: IOException) {
+            return error(e.localizedMessage)
         }
-        return true;
+        return true
     }
 
-    public boolean success(int message) {
-        successMessage = context.getString(message);
-        return true;
+    fun success(message: Int): Boolean {
+        successMessage = context.getString(message)
+        return true
     }
 
-    public boolean error(int error) {
-        return error(context.getString(error));
+    fun error(error: Int): Boolean {
+        return error(context.getString(error))
     }
 
-    public boolean error(String error) {
-        errorMessage = error;
-        return false;
+    fun error(error: String?): Boolean {
+        errorMessage = error
+        return false
     }
 }

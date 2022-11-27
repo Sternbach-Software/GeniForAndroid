@@ -1,38 +1,40 @@
-package app.familygem;
+package app.familygem
 
-import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
-import android.content.res.Configuration;
-import android.net.Uri;
-import android.os.Bundle;
-import android.view.View;
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import app.familygem.R
+import androidx.appcompat.app.AppCompatDelegate
+import android.content.Intent
+import app.familygem.U
+import app.familygem.FacadeActivity
+import app.familygem.TreesActivity
+import org.apache.commons.net.ftp.FTPClient
+import app.familygem.NewTreeActivity
+import android.app.Activity
+import android.content.Context
+import android.view.View
+import app.familygem.constant.intdefs.OPEN_TREE_AUTOMATICALLY_KEY
+import java.io.FileOutputStream
+import java.lang.Exception
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
-
-import org.apache.commons.net.ftp.FTPClient;
-
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.util.Locale;
-
-public class FacadeActivity extends AppCompatActivity {
-
-    @Override
-    protected void onCreate(Bundle bundle) {
-        super.onCreate(bundle);
-        setContentView(R.layout.facciata);
+class FacadeActivity : AppCompatActivity() {
+    override fun onCreate(bundle: Bundle?) {
+        super.onCreate(bundle)
+        setContentView(R.layout.facciata)
 
         // Set app locale for application context and resources (localized gedcom.jar library)
-        Locale locale = AppCompatDelegate.getApplicationLocales().get(0); // Find app locale, or null if not existing
+        val locale =
+            AppCompatDelegate.getApplicationLocales()[0] // Find app locale, or null if not existing
         if (locale != null) {
-            Configuration config = getResources().getConfiguration();
-            config.setLocale(locale);
-            getApplicationContext().getResources().updateConfiguration(config, null); // Change locale both for static methods and jar library
+            val config = resources.configuration
+            config.setLocale(locale)
+            applicationContext.resources.updateConfiguration(
+                config,
+                null
+            ) // Change locale both for static methods and jar library
         }
 
-		/*
+        /*
 		Opening after clicking on various types of links:
 		https://www.familygem.app/share.php?tree=20190802224208
 			Short message
@@ -57,87 +59,97 @@ public class FacadeActivity extends AppCompatActivity {
 			URL diretto allo zip
 			Funziona nei vecchi android, nei nuovi semplicemente il file viene scaricato
 		*/
-        Intent intent = getIntent();
-        Uri uri = intent.getData();
+        val intent = intent
+        val uri = intent.data
         // By opening the app from Task Manager, avoid re-importing a newly imported shared tree
-        boolean fromHistory = (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY;
+        val fromHistory =
+            intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY
         if (uri != null && !fromHistory) {
-            String dataId;
-            if (uri.getPath().equals("/share.php")) // click on the first message received
-                dataId = uri.getQueryParameter("tree");
-            else if (uri.getLastPathSegment().endsWith(".zip")) // click on the invitation page
-                dataId = uri.getLastPathSegment().replace(".zip", "");
-            else {
-                U.toast(this, R.string.cant_understand_uri);
-                return;
+            val dataId: String?
+            dataId = if (uri.path == "/share.php") // click on the first message received
+                uri.getQueryParameter("tree") else if (uri.lastPathSegment!!.endsWith(".zip")) // click on the invitation page
+                uri.lastPathSegment!!.replace(".zip", "") else {
+                U.toast(this, R.string.cant_understand_uri)
+                return
             }
             if (!BuildConfig.utenteAruba.isEmpty()) {
                 // It does not need to apply for permissions
-                downloadShared(this, dataId, null);
+                downloadShared(this, dataId, null)
             }
         } else {
-            Intent treesIntent = new Intent(this, TreesActivity.class);
+            val treesIntent = Intent(this, TreesActivity::class.java)
             // Open last tree at startup
             if (Global.settings.loadTree) {
-                treesIntent.putExtra("apriAlberoAutomaticamente", true);
-                treesIntent.setFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION); // perhaps ineffective but so be it
+                treesIntent.putExtra(OPEN_TREE_AUTOMATICALLY_KEY, true)
+                treesIntent.flags =
+                    Intent.FLAG_ACTIVITY_NO_ANIMATION // perhaps ineffective but so be it
             }
-            startActivity(treesIntent);
+            startActivity(treesIntent)
         }
     }
 
-    /**
-	 * Connects to the server and downloads the zip file to import it
-	 * */
-    static void downloadShared(Context context, String idData, View wheel) {
-        if (wheel != null)
-            wheel.setVisibility(View.VISIBLE);
-        // A new Thread is needed to asynchronously download a file
-        new Thread(() -> {
-            try {
-                FTPClient client = new FTPClient(); //TODO refactor to use Retrofit
-                client.connect("89.46.104.211");
-                client.enterLocalPassiveMode();
-                client.login(BuildConfig.utenteAruba, BuildConfig.passwordAruba);
-                // Todo: Maybe you could use the download manager so that you have the file also listed in 'Downloads'
-                String zipPath = context.getExternalCacheDir() + "/" + idData + ".zip";
-                FileOutputStream fos = new FileOutputStream(zipPath);
-                String path = "/www.familygem.app/condivisi/" + idData + ".zip";
-                InputStream input = client.retrieveFileStream(path);
-                if (input != null) {
-                    byte[] data = new byte[1024];
-                    int count;
-                    while ((count = input.read(data)) != -1) {
-                        fos.write(data, 0, count);
-                    }
-                    fos.close();
-                    if (client.completePendingCommand() && NewTreeActivity.unZip(context, zipPath, null)) {
-                        //If the tree was downloaded with the install referrer // Se l'albero è stato scaricato con l'install referrer
-                        if (Global.settings.referrer != null && Global.settings.referrer.equals(idData)) {
-                            Global.settings.referrer = null;
-                            Global.settings.save();
+    companion object {
+        /**
+         * Connects to the server and downloads the zip file to import it
+         */
+        @JvmStatic
+        fun downloadShared(context: Context, idData: String?, wheel: View?) {
+            if (wheel != null) wheel.visibility = View.VISIBLE
+            // A new Thread is needed to asynchronously download a file
+            Thread {
+                try {
+                    val client = FTPClient() //TODO refactor to use Retrofit
+                    client.connect("89.46.104.211")
+                    client.enterLocalPassiveMode()
+                    client.login(BuildConfig.utenteAruba, BuildConfig.passwordAruba)
+                    // Todo: Maybe you could use the download manager so that you have the file also listed in 'Downloads'
+                    val zipPath = context.externalCacheDir.toString() + "/" + idData + ".zip"
+                    val fos = FileOutputStream(zipPath)
+                    val path = "/www.familygem.app/condivisi/$idData.zip"
+                    val input = client.retrieveFileStream(path)
+                    if (input != null) {
+                        val data = ByteArray(1024)
+                        var count: Int
+                        while (input.read(data).also { count = it } != -1) {
+                            fos.write(data, 0, count)
                         }
-                    } else { // Failed decompression of downloaded ZIP (e.g. corrupted file)
-                        downloadFailed(context, context.getString(R.string.backup_invalid), wheel);
-                    }
-                } else // Did not find the file on the server
-                    downloadFailed(context, context.getString(R.string.something_wrong), wheel);
-                client.logout();
-                client.disconnect();
-            } catch (Exception e) {
-                downloadFailed(context, e.getLocalizedMessage(), wheel);
-            }
-        }).start();
-    }
+                        fos.close()
+                        if (client.completePendingCommand() && NewTreeActivity.unZip(
+                                context,
+                                zipPath,
+                                null
+                            )
+                        ) {
+                            //If the tree was downloaded with the install referrer // Se l'albero è stato scaricato con l'install referrer
+                            if (Global.settings.referrer != null && Global.settings.referrer == idData) {
+                                Global.settings.referrer = null
+                                Global.settings.save()
+                            }
+                        } else { // Failed decompression of downloaded ZIP (e.g. corrupted file)
+                            downloadFailed(
+                                context,
+                                context.getString(R.string.backup_invalid),
+                                wheel
+                            )
+                        }
+                    } else  // Did not find the file on the server
+                        downloadFailed(context, context.getString(R.string.something_wrong), wheel)
+                    client.logout()
+                    client.disconnect()
+                } catch (e: Exception) {
+                    downloadFailed(context, e.localizedMessage, wheel)
+                }
+            }.start()
+        }
 
-    /**
-	 * Negative conclusion of the above method
-	 * */
-    static void downloadFailed(Context context, String message, View wheel) {
-        U.toast((Activity) context, message);
-        if (wheel != null)
-            ((Activity) context).runOnUiThread(() -> wheel.setVisibility(View.GONE));
-        else
-            context.startActivity(new Intent(context, TreesActivity.class));
+        /**
+         * Negative conclusion of the above method
+         */
+        fun downloadFailed(context: Context, message: String?, wheel: View?) {
+            U.toast(context as Activity, message)
+            if (wheel != null) context.runOnUiThread {
+                wheel.visibility = View.GONE
+            } else context.startActivity(Intent(context, TreesActivity::class.java))
+        }
     }
 }

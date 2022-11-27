@@ -32,8 +32,8 @@ class AddressActivity : DetailActivity() {
     }
 
     override fun delete() {
-        deleteAddress(Memory.getSecondToLastObject())
-        U.updateChangeDate(Memory.firstObject())
+        deleteAddress(Memory.secondToLastObject)
+        Memory.firstObject()?.let { U.updateChangeDate(it) }
         Memory.setInstanceAndAllSubsequentToNull(a)
     }
 }

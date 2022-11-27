@@ -28,6 +28,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.Fragment
+import app.familygem.constant.intdefs.ALL_MEDIA
+import app.familygem.constant.intdefs.CACHE_EXTENSION_KEY
 import app.familygem.detail.ImageActivity
 import app.familygem.visitor.MediaList
 import com.google.gson.JsonPrimitive
@@ -213,7 +215,7 @@ object F {
     @JvmStatic
     fun saveDocument(
         activity: Activity?,
-        fragment: Fragment,
+        fragment: Fragment?,
         treeId: Int,
         mime: String?,
         ext: String,
@@ -224,8 +226,8 @@ object F {
         val name = Global
             .settings
             .getTree(treeId)
-            .title
-            .replace("[$']".toRegex(), "_")
+            ?.title
+            ?.replace("[$']".toRegex(), "_")
         val extension = if (ext == "ged") ".ged" else ""
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
             .addCategory(Intent.CATEGORY_OPENABLE)
@@ -234,7 +236,7 @@ object F {
                 Intent.EXTRA_TITLE,
                 "$name$extension"
             )
-        activity?.startActivityForResult(intent, requestCode) ?: fragment.startActivityForResult(
+        activity?.startActivityForResult(intent, requestCode) ?: fragment?.startActivityForResult(
             intent,
             requestCode
         )
@@ -245,8 +247,8 @@ object F {
      * // Riceve una Person e sceglie il Media principale da cui ricavare l'immagine
      */
     @JvmStatic
-    fun showMainImageForPerson(gc: Gedcom?, p: Person, img: ImageView): Media? {
-        val mediaList = MediaList(gc, 0)
+    fun showMainImageForPerson(gc: Gedcom, p: Person, img: ImageView): Media? {
+        val mediaList = MediaList(gc, ALL_MEDIA)
         p.accept(mediaList)
         val media = mediaList
             .list
@@ -381,7 +383,7 @@ object F {
             val name = m.file.replace("\\", "/")
             // FILE path (the one in gedcom)
             if (File(name).canRead()) return name
-            for (dir in Global.settings.getTree(treeId).dirs) {
+            for (dir in Global.settings.getTree(treeId)?.dirs!!) {
                 // media folder + FILE path
                 var test = File("$dir/$name")
                 /* Todo Sometimes File.isFile () produces an ANR, like https://stackoverflow.com/questions/224756
@@ -393,7 +395,7 @@ object F {
                 test = File(dir, File(name).name)
                 if (test.isFile && test.canRead()) return test.path
             }
-            val string = m.getExtension("cache")
+            val string = m.getExtension(CACHE_EXTENSION_KEY)
             // Sometimes it is String sometimes JsonPrimitive, I don't quite understand why
             if (string != null) {
                 val cachePath =
@@ -413,7 +415,7 @@ object F {
         if (m.file?.isNotEmpty() == true) {
             // OBJE.FILE is never a Uri, always a path (Windows or Android)
             val filename = File(m.file.replace("\\", "/")).name
-            for (uri in Global.settings.getTree(treeId).uris) {
+            for (uri in Global.settings.getTree(treeId)?.uris!!) {
                 val documentDir = DocumentFile.fromTreeUri(Global.context, Uri.parse(uri))
                 val docFile = documentDir!!.findFile(filename)
                 if (docFile?.isFile == true) return docFile.uri
@@ -447,7 +449,7 @@ object F {
         context: Context,
         fragment: Fragment?,
         code: Int,
-        container: MediaContainer
+        container: MediaContainer?
     ) {
         // Request permission to access device memory
         val perm =
@@ -533,7 +535,7 @@ object F {
                 if (code == 4173 || code == 2173) { // Simple media
                     med = Media()
                     med.fileTag = "FILE"
-                    container.addMedia(med)
+                    container?.addMedia(med)
                     Memory.add(med)
                 } else { // Shared media
                     med = GalleryFragment.newMedia(container)
@@ -633,7 +635,7 @@ object F {
             }
         }
         //Adds the folder path in the Tree in preferences // Aggiunge il percorso della cartella nel Tree in preferenze
-        if (Global.settings.currentTree.dirs.add(fileMedia.parent)) // true if it added the folder
+        if (Global.settings.currentTree?.dirs?.add(fileMedia.parent) == true) // true if it added the folder
             Global.settings.save()
         // Set the path found in the Media
         media.file = fileMedia.absolutePath
@@ -775,7 +777,7 @@ object F {
         code: Int,
         permissions: Array<String>,
         grantResults: IntArray,
-        container: MediaContainer
+        container: MediaContainer?
     ) {
         if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
             displayMediaAppList(context, fragment, code, container)
@@ -802,10 +804,10 @@ object F {
                     File(Global.context.cacheDir.path + "/" + Global.settings.openTree)
                 if (!cacheFolder.exists()) {
                     // Delete "cache" extension from all Media
-                    val mediaList = MediaList(Global.gc, 0)
-                    Global.gc.accept(mediaList)
-                    for (media in mediaList.list) if (media.getExtension("cache") != null) media.putExtension(
-                        "cache",
+                    val mediaList = MediaList(Global.gc!!, ALL_MEDIA)
+                    Global.gc!!.accept(mediaList)
+                    for (media in mediaList.list) if (media.getExtension(CACHE_EXTENSION_KEY) != null) media.putExtension(
+                        CACHE_EXTENSION_KEY,
                         null
                     )
                     cacheFolder.mkdir()
@@ -814,7 +816,10 @@ object F {
                 val indexOfDot = extension.lastIndexOf('.')
                 if (indexOfDot > 0) extension =
                     extension.substring(indexOfDot + 1)
-                if (extension == "jpeg" || extension !in arrayOf("png", "gif", "bmp", "jpg")) extension = "jpg" //TODO why should the default be jpg??
+                when(extension) {
+                    "png", "gif", "bmp", "jpg" -> {} //don't do anything, keep it how it is - it is an accepted extension
+                    else -> extension = "jpg" //TODO why should the default be jpg??
+                }
                 val cache = nextAvailableFileName(cacheFolder.path, "img.$extension")
                 FileUtils.copyURLToFile(url[0], cache)
                 return cache.path
@@ -825,7 +830,7 @@ object F {
         }
 
         override fun onPostExecute(path: String?) {
-            if (path != null) media.putExtension("cache", path)
+            if (path != null) media.putExtension(CACHE_EXTENSION_KEY, path)
         }
     }
 

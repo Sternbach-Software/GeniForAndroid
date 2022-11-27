@@ -34,7 +34,7 @@ class ExtensionActivity : DetailActivity() {
     }
 
     override fun delete() {
-        U.deleteExtension(e, Memory.getSecondToLastObject(), null)
+        U.deleteExtension(e, Memory.secondToLastObject, null)
         U.updateChangeDate(Memory.firstObject())
     }
 }

@@ -4,7 +4,6 @@ import android.content.Context
 import app.familygem.constant.Status.Companion.getStatus
 import app.familygem.constant.Gender.Companion.isMale
 import app.familygem.constant.Gender.Companion.isFemale
-import app.familygem.detail.FamilyActivity
 import android.content.Intent
 import android.content.DialogInterface
 import android.view.View
@@ -25,7 +24,7 @@ class FamilyActivity : DetailActivity() {
         for (wifeRef in f.wifeRefs) addMember(wifeRef, Relation.PARTNER)
         for (childRef in f.childRefs) addMember(childRef, Relation.CHILD)
         for (ef in f.eventsFacts) {
-            place(writeEventTitle(f, ef), ef)
+            place(getEventTitle(f, ef), ef)
         }
         placeExtensions(f)
         U.placeNotes(box, f, true)
@@ -279,7 +278,7 @@ class FamilyActivity : DetailActivity() {
             if (family.childRefs.isEmpty()) family.childRefs = null
 
             // Removes family refs in the indi //Rimuove i ref della famiglia nell'indi
-            val person = Global.gc.getPerson(indiId)
+            val person = Global.gc!!.getPerson(indiId)
             val iterSfr = person.spouseFamilyRefs.iterator()
             while (iterSfr.hasNext()) if (iterSfr.next().ref == family.id) iterSfr.remove()
             if (person.spouseFamilyRefs.isEmpty()) person.spouseFamilyRefs = null

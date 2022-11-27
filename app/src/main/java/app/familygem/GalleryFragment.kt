@@ -1,208 +1,233 @@
-package app.familygem;
+package app.familygem
 
-import android.app.Activity;
-import android.content.Intent;
-import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import android.view.ContextMenu;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import com.theartofdev.edmodo.cropper.CropImage;
-import org.folg.gedcom.model.Media;
-import org.folg.gedcom.model.MediaContainer;
-import org.folg.gedcom.model.MediaRef;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-import app.familygem.visitor.MediaListContainer;
-import app.familygem.visitor.MediaReferences;
-import app.familygem.visitor.FindStack;
-import static app.familygem.Global.gc;
+import app.familygem.F.displayMediaAppList
+import app.familygem.F.proposeCropping
+import app.familygem.F.endImageCropping
+import app.familygem.F.permissionsResult
+import app.familygem.visitor.MediaListContainer
+import app.familygem.MediaGalleryAdapter
+import android.os.Bundle
+import app.familygem.R
+import app.familygem.F
+import androidx.appcompat.app.AppCompatActivity
+import android.content.Intent
+import android.app.Activity
+import android.view.*
+import app.familygem.GalleryFragment
+import app.familygem.U
+import com.theartofdev.edmodo.cropper.CropImage
+import android.view.ContextMenu.ContextMenuInfo
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import app.familygem.MediaFoldersActivity
+import app.familygem.visitor.MediaReferences
+import org.folg.gedcom.model.MediaRef
+import org.folg.gedcom.model.MediaContainer
+import app.familygem.visitor.FindStack
+import app.familygem.Memory
+import app.familygem.constant.intdefs.GALLERY_CHOOSE_MEDIA_KEY
+import app.familygem.constant.intdefs.TREE_ID_KEY
+import org.folg.gedcom.model.Media
+import java.util.*
 
 /**
  * List of Media
- * */
-public class GalleryFragment extends Fragment {
+ */
+class GalleryFragment : Fragment() {
+    var mediaVisitor: MediaListContainer? = null
+    var adapter: MediaGalleryAdapter? = null
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        bandolo: Bundle?
+    ): View? {
+        setHasOptionsMenu(true)
+        val view = inflater.inflate(R.layout.gallery, container, false)
+        val recyclerView = view.findViewById<RecyclerView>(R.id.gallery_recycler)
+        recyclerView.setHasFixedSize(true)
+        if (Global.gc != null) {
+            mediaVisitor = MediaListContainer(
+                Global.gc!!,
+                !requireActivity().intent.getBooleanExtra(GALLERY_CHOOSE_MEDIA_KEY, false)
+            )
+            Global.gc!!.accept(mediaVisitor)
+            setToolbarTitle()
+            val gestoreLayout: RecyclerView.LayoutManager = GridLayoutManager(
+                context, 2
+            )
+            recyclerView.layoutManager = gestoreLayout
+            adapter = MediaGalleryAdapter(mediaVisitor!!.mediaList.toList(), true)
+            recyclerView.adapter = adapter
+            view.findViewById<View>(R.id.fab).setOnClickListener { v: View? ->
+                displayMediaAppList(
+                    requireContext(), this@GalleryFragment, 4546, null
+                )
+            }
+        }
+        return view
+    }
 
-	MediaListContainer mediaVisitor;
-	MediaGalleryAdapter adapter;
+    /**
+     * Leaving the activity resets the extra if no shared media has been chosen
+     * // Andandosene dall'attività resetta l'extra se non è stato scelto un media condiviso
+     */
+    override fun onPause() {
+        super.onPause()
+        requireActivity().intent.removeExtra(GALLERY_CHOOSE_MEDIA_KEY)
+    }
 
-	@Override
-	public View onCreateView( LayoutInflater inflater, ViewGroup container, Bundle bandolo ) {
-		setHasOptionsMenu( true );
-		View view = inflater.inflate( R.layout.gallery, container, false );
-		RecyclerView recyclerView = view.findViewById( R.id.gallery_recycler );
-		recyclerView.setHasFixedSize( true );
-		if( gc != null ) {
-			mediaVisitor = new MediaListContainer( gc, !getActivity().getIntent().getBooleanExtra("galleriaScegliMedia",false ) );
-			gc.accept(mediaVisitor);
-			setToolbarTitle();
-			RecyclerView.LayoutManager gestoreLayout = new GridLayoutManager( getContext(), 2 );
-			recyclerView.setLayoutManager( gestoreLayout );
-			adapter = new MediaGalleryAdapter( mediaVisitor.mediaList, true );
-			recyclerView.setAdapter(adapter);
-			view.findViewById( R.id.fab ).setOnClickListener( v ->
-					F.displayMediaAppList( getContext(), GalleryFragment.this, 4546, null )
-			);
-		}
-		return view;
-	}
+    fun setToolbarTitle() {
+        (activity as AppCompatActivity?)!!.supportActionBar!!.title = mediaVisitor!!.mediaList.size
+            .toString() + " " + getString(R.string.media).lowercase(Locale.getDefault())
+    }
 
-	/**
-	 * Leaving the activity resets the extra if no shared media has been chosen
-	 * // Andandosene dall'attività resetta l'extra se non è stato scelto un media condiviso
-	 * */
-	@Override
-	public void onPause() {
-		super.onPause();
-		getActivity().getIntent().removeExtra("galleriaScegliMedia");
-	}
+    /**
+     * Update the contents of the gallery
+     */
+    fun recreate() {
+        mediaVisitor!!.mediaList.clear()
+        Global.gc!!.accept(mediaVisitor)
+        adapter!!.notifyDataSetChanged()
+        setToolbarTitle()
+    }
 
-	void setToolbarTitle() {
-		((AppCompatActivity)getActivity()).getSupportActionBar().setTitle( mediaVisitor.mediaList.size()
-				+ " " + getString(R.string.media).toLowerCase() );
-	}
+    /**
+     * The file fished by the file manager becomes shared media
+     * // Il file pescato dal file manager diventa media condiviso
+     */
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == 4546) { //File taken from the supplier app is saved in Media and possibly cropped // File preso da app fornitrice viene salvato in Media ed eventualmente ritagliato
+                val media = newMedia(null)
+                if (proposeCropping(
+                        requireContext(),
+                        this,
+                        data,
+                        media
+                    )
+                ) { // if it is an image (therefore it can be cropped)
+                    U.save(false, media)
+                    //onRestart () + recreate () must not be triggered because then the arrival fragment is no longer the same // Non deve scattare onRestart() + recreate() perché poi il fragment di arrivo non è più lo stesso
+                    return
+                }
+            } else if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
+                endImageCropping(data)
+            }
+            U.save(true, Global.croppedMedia)
+        } else if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) // if you click the back arrow in Crop Image
+            Global.edited = true
+    }
 
-	/**
-	 * Update the contents of the gallery
-	 * */
-	void recreate() {
-		mediaVisitor.mediaList.clear();
-		gc.accept(mediaVisitor);
-		adapter.notifyDataSetChanged();
-		setToolbarTitle();
-	}
+    // contextual Menu
+    private var media: Media? = null
+    override fun onCreateContextMenu(menu: ContextMenu, view: View, info: ContextMenuInfo?) {
+        media = view.getTag(R.id.tag_object) as Media
+        menu.add(0, 0, 0, R.string.delete)
+    }
 
-	// todo bypassabile?
-	static int popularity(Media med ) {
-		MediaReferences riferiMedia = new MediaReferences( gc, med, false );
-		return riferiMedia.num;
-	}
+    override fun onContextItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == 0) {
+            val modified = deleteMedia(media, null)
+            recreate()
+            U.save(false, *modified)
+            return true
+        }
+        return false
+    }
 
-	static Media newMedia(Object container ){
-		Media media = new Media();
-		media.setId( U.newID(gc,Media.class) );
-		media.setFileTag("FILE"); // Necessary to then export the Gedcom
-		gc.addMedia( media );
-		if( container != null ) {
-			MediaRef mediaRef = new MediaRef();
-			mediaRef.setRef( media.getId() );
-			((MediaContainer)container).addMediaRef( mediaRef );
-		}
-		return media;
-	}
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        menu.add(0, 0, 0, R.string.media_folders)
+    }
 
-	/**
-	 * Detach a shared media from a container
-	 * */
-	static void disconnectMedia(String mediaId, MediaContainer container) {
-		Iterator<MediaRef> refs = container.getMediaRefs().iterator();
-		while( refs.hasNext() ) {
-			MediaRef ref = refs.next();
-			if( ref.getMedia( Global.gc ) == null // Possible ref to a non-existent media
-					|| ref.getRef().equals(mediaId) )
-				refs.remove();
-		}
-		if( container.getMediaRefs().isEmpty() )
-			container.setMediaRefs( null );
-	}
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == 0) {
+            startActivity(
+                Intent(context, MediaFoldersActivity::class.java)
+                    .putExtra(TREE_ID_KEY, Global.settings.openTree)
+            )
+            return true
+        }
+        return false
+    }
 
-	/**
-	 * // Delete a shared or local media and remove references in containers
-	 * // Return an array with modified progenitors
-	 *
-	 * // Elimina un media condiviso o locale e rimuove i riferimenti nei contenitori
-	 * // Restituisce un array con i capostipiti modificati
-	 * */
-	public static Object[] deleteMedia(Media media, View view) {
-		Set<Object> heads;
-		if( media.getId() != null ) { // media OBJECT
-			gc.getMedia().remove(media);
-			// Delete references in all containers
-			MediaReferences deleteMedia = new MediaReferences(gc, media, true);
-			heads = deleteMedia.founders;
-		} else { // media LOCALE
-			new FindStack(gc, media); //temporarily find the media stack to locate the container // trova temporaneamente la pila del media per individuare il container
-			MediaContainer container = (MediaContainer) Memory.getSecondToLastObject();
-			container.getMedia().remove(media);
-			if( container.getMedia().isEmpty() )
-				container.setMedia(null);
-			heads = new HashSet<>(); // set with only one parent Object
-			heads.add( Memory.firstObject() );
-			Memory.clearStackAndRemove(); // delete the stack you just created
-		}
-		Memory.setInstanceAndAllSubsequentToNull(media);
-		if( view != null )
-			view.setVisibility(View.GONE);
-		return heads.toArray(new Object[0]);
-	}
+    override fun onRequestPermissionsResult(
+        codice: Int,
+        permission: Array<String>,
+        grantResults: IntArray
+    ) {
+        permissionsResult(requireContext(), this, codice, permission, grantResults, null)
+    }
 
-	/**
-	 * The file fished by the file manager becomes shared media
-	 * // Il file pescato dal file manager diventa media condiviso
-	 * */
-	@Override
-	public void onActivityResult( int requestCode, int resultCode, Intent data ) {
-		if( resultCode == Activity.RESULT_OK ) {
-			if( requestCode == 4546 ) { //File taken from the supplier app is saved in Media and possibly cropped // File preso da app fornitrice viene salvato in Media ed eventualmente ritagliato
-				Media media = newMedia(null);
-				if( F.proposeCropping(getContext(), this, data, media) ) { // if it is an image (therefore it can be cropped)
-					U.save(false, media);
-							//onRestart () + recreate () must not be triggered because then the arrival fragment is no longer the same // Non deve scattare onRestart() + recreate() perché poi il fragment di arrivo non è più lo stesso
-					return;
-				}
-			} else if( requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE ) {
-				F.endImageCropping(data);
-			}
-			U.save(true, Global.croppedMedia);
-		} else if( requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE ) // if you click the back arrow in Crop Image
-			Global.edited = true;
-	}
+    companion object {
+        // todo bypassabile?
+        @JvmStatic
+        fun popularity(med: Media?): Int {
+            val riferiMedia = MediaReferences(Global.gc!!, med!!, false)
+            return riferiMedia.num
+        }
 
-	// contextual Menu
-	private Media media;
-	@Override
-	public void onCreateContextMenu( ContextMenu menu, View view, ContextMenu.ContextMenuInfo info ) {
-		media = (Media) view.getTag( R.id.tag_object );
-		menu.add(0, 0, 0, R.string.delete );
-	}
-	@Override
-	public boolean onContextItemSelected(MenuItem item) {
-		if( item.getItemId() == 0 ) {
-			Object[] modified = deleteMedia(media, null);
-			recreate();
-			U.save(false, modified);
-			return true;
-		}
-		return false;
-	}
+        @JvmStatic
+        fun newMedia(container: Any?): Media {
+            val media = Media()
+            media.id = U.newID(Global.gc!!, Media::class.java)
+            media.fileTag = "FILE" // Necessary to then export the Gedcom
+            Global.gc!!.addMedia(media)
+            if (container != null) {
+                val mediaRef = MediaRef()
+                mediaRef.ref = media.id
+                (container as MediaContainer).addMediaRef(mediaRef)
+            }
+            return media
+        }
 
-	@Override
-	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-		menu.add(0, 0, 0, R.string.media_folders);
-	}
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		if( item.getItemId() == 0 ) {
-			startActivity(new Intent(getContext(), MediaFoldersActivity.class)
-					.putExtra("idAlbero", Global.settings.openTree)
-			);
-			return true;
-		}
-		return false;
-	}
+        /**
+         * Detach a shared media from a container
+         */
+        @JvmStatic
+        fun disconnectMedia(mediaId: String, container: MediaContainer) {
+            val refs = container.mediaRefs.iterator()
+            while (refs.hasNext()) {
+                val ref = refs.next()
+                if (ref.getMedia(Global.gc) == null // Possible ref to a non-existent media
+                    || ref.ref == mediaId
+                ) refs.remove()
+            }
+            if (container.mediaRefs.isEmpty()) container.mediaRefs = null
+        }
 
-	@Override
-	public void onRequestPermissionsResult(int codice, @NonNull String[] permission, @NonNull int[] grantResults) {
-		F.permissionsResult(getContext(), this, codice, permission, grantResults, null);
-	}
+        /**
+         * // Delete a shared or local media and remove references in containers
+         * // Return an array with modified progenitors
+         *
+         * // Elimina un media condiviso o locale e rimuove i riferimenti nei contenitori
+         * // Restituisce un array con i capostipiti modificati
+         */
+        @JvmStatic
+        fun deleteMedia(media: Media?, view: View?): Array<Any?> {
+            val heads: MutableSet<Any?>
+            if (media!!.id != null) { // media OBJECT
+                Global.gc!!.media.remove(media)
+                // Delete references in all containers
+                val deleteMedia = MediaReferences(Global.gc!!, media, true)
+                heads = deleteMedia.founders
+            } else { // media LOCALE
+                Global.gc?.let {
+                    FindStack(
+                        it,
+                        media
+                    )
+                } //temporarily find the media stack to locate the container // trova temporaneamente la pila del media per individuare il container
+                val container = Memory.secondToLastObject as MediaContainer
+                container.media.remove(media)
+                if (container.media.isEmpty()) container.media = null
+                heads = HashSet() // set with only one parent Object
+                heads.add(Memory.firstObject())
+                Memory.clearStackAndRemove() // delete the stack you just created
+            }
+            Memory.setInstanceAndAllSubsequentToNull(media)
+            if (view != null) view.visibility = View.GONE
+            return heads.toTypedArray()
+        }
+    }
 }

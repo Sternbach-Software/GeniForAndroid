@@ -1,84 +1,26 @@
-package app.familygem.visitor;
+package app.familygem.visitor
 
-import org.folg.gedcom.model.Change;
-import org.folg.gedcom.model.EventFact;
-import org.folg.gedcom.model.Family;
-import org.folg.gedcom.model.Header;
-import org.folg.gedcom.model.Media;
-import org.folg.gedcom.model.Name;
-import org.folg.gedcom.model.Note;
-import org.folg.gedcom.model.Person;
-import org.folg.gedcom.model.Repository;
-import org.folg.gedcom.model.RepositoryRef;
-import org.folg.gedcom.model.Source;
-import org.folg.gedcom.model.SourceCitation;
-import org.folg.gedcom.model.Submitter;
-import org.folg.gedcom.model.Visitor;
+import org.folg.gedcom.model.*
 
 /**
  * Visitor model that visits all the possible Gedcom containers distinguishing the progenitors
  * Modello di Visitor che visita tutti i possibili contenitori del Gedcom distinguendo i capostipiti
- * */
-public class TotalVisitor extends Visitor {
+ */
+open class TotalVisitor : Visitor() {
+    private fun visitInternal(`object`: Any) = visit(`object`, false)
 
-	private boolean visitInternal(Object object ) {
-		return visit( object, false );
-	}
-
-	boolean visit(Object obj, boolean isProgenitor ) {
-		return true;
-	}
-
-	@Override
-	public boolean visit( Header h ) {
-		return visit( h, true );
-	}
-	@Override
-	public boolean visit( Person p ) {
-		return visit( p, true );
-	}
-	@Override
-	public boolean visit( Family f ) {
-		return visit( f, true );
-	}
-	@Override
-	public boolean visit( Source s ) {
-		return visit( s, true );
-	}
-	@Override
-	public boolean visit( Repository r ) {
-		return visit( r, true );
-	}
-	@Override
-	public boolean visit( Submitter s ) {
-		return visit( s, true );
-	}
-	@Override
-	public boolean visit( Media m ) {
-		return visit( m, m.getId()!=null );
-	}
-	@Override
-	public boolean visit( Note n ) {
-		return visit( n, n.getId()!=null );
-	}
-	@Override
-	public boolean visit( Name n ) {
-		return visitInternal( n );
-	}
-	@Override
-	public boolean visit( EventFact e ) {
-		return visitInternal( e );
-	}
-	@Override
-	public boolean visit( SourceCitation s ) {
-		return visitInternal( s );
-	}
-	@Override
-	public boolean visit( RepositoryRef r ) {
-		return visitInternal( r );
-	}
-	@Override
-	public boolean visit( Change c ) {
-		return visitInternal( c );
-	}
+    open fun visit(obj: Any?, isProgenitor: Boolean) = true
+    override fun visit(h: Header) = visit(h, true)
+    override fun visit(p: Person) = visit(p, true)
+    override fun visit(f: Family) = visit(f, true)
+    override fun visit(s: Source) = visit(s, true)
+    override fun visit(r: Repository) = visit(r, true)
+    override fun visit(s: Submitter) = visit(s, true)
+    override fun visit(m: Media) = visit(m, m.id != null)
+    override fun visit(n: Note) = visit(n, n.id != null)
+    override fun visit(n: Name) = visitInternal(n)
+    override fun visit(e: EventFact) = visitInternal(e)
+    override fun visit(s: SourceCitation) = visitInternal(s)
+    override fun visit(r: RepositoryRef) = visitInternal(r)
+    override fun visit(c: Change) = visitInternal(c)
 }

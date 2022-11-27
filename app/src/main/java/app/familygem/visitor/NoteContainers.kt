@@ -1,11 +1,11 @@
-package app.familygem.visitor;
+package app.familygem.visitor
 
-import org.folg.gedcom.model.Gedcom;
-import org.folg.gedcom.model.Note;
-import org.folg.gedcom.model.NoteContainer;
-import org.folg.gedcom.model.NoteRef;
-import java.util.HashSet;
-import java.util.Set;
+import org.folg.gedcom.model.Gedcom
+import app.familygem.visitor.TotalVisitor
+import org.folg.gedcom.model.Note
+import org.folg.gedcom.model.NoteContainer
+import org.folg.gedcom.model.NoteRef
+import java.util.HashSet
 
 /**
  * Visitor somewhat complementary to ReferencesNote, having a double function:
@@ -16,28 +16,27 @@ import java.util.Set;
  * - Modifica i ref che puntano alla nota condivisa
  * - Colleziona una lista dei contenitori che includono la Nota condivisa
  */
-public class NoteContainers extends TotalVisitor {
+class NoteContainers(
+    gc: Gedcom, // the shared note to search for
+    private val note: Note, // the new id to put in the ref
+    private val newId: String
+) : TotalVisitor() {
 
-	public Set<NoteContainer> containers = new HashSet<>();
-	private Note note; // the shared note to search for
-	private String newId; // the new id to put in the ref
+    val containers = hashSetOf<NoteContainer>()
 
-	public NoteContainers(Gedcom gc, Note note, String newId) {
-		this.note = note;
-		this.newId = newId;
-		gc.accept(this);
-	}
+    init {
+        gc.accept(this)
+    }
 
-	@Override
-	boolean visit(Object obj, boolean isProgenitor) {
-		if( obj instanceof NoteContainer ) {
-			for( NoteRef noteRef : ((NoteContainer) obj).getNoteRefs() ) {
-				if( noteRef.getRef().equals(note.getId()) ) {
-					noteRef.setRef(newId);
-					containers.add((NoteContainer) obj);
-				}
-			}
-		}
-		return true;
-	}
+    public override fun visit(obj: Any, isProgenitor: Boolean): Boolean {
+        if (obj is NoteContainer) {
+            for (noteRef in obj.noteRefs) {
+                if (noteRef.ref == note.id) {
+                    noteRef.ref = newId
+                    containers.add(obj)
+                }
+            }
+        }
+        return true
+    }
 }
