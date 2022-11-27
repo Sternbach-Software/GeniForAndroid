@@ -112,7 +112,7 @@ class Diagram : Fragment() {
         moveLayout.leftToRight = leftToRight
         box = view.findViewById(R.id.diagram_box)
         //box.setBackgroundColor(0x22ff0000);
-        graph = graph!!.gedcom.Graph(Global.gc) // Create a diagram model
+        graph = Graph(Global.gc) // Create a diagram model
         moveLayout.graph = graph
         forceDraw = true // To be sure the diagram will be drawn
 
@@ -460,7 +460,7 @@ class Diagram : Fragment() {
                 hearth = View(context)
                 hearth!!.setBackgroundResource(R.drawable.diagram_hearth)
                 val diameter =
-                    toPx(if (familyNode.mini) graph!!.gedcom.Util.MINI_HEARTH_DIAMETER else graph!!.gedcom.Util.HEARTH_DIAMETER.toFloat())
+                    toPx(if (familyNode.mini) Util.MINI_HEARTH_DIAMETER.toFloat() else Util.HEARTH_DIAMETER.toFloat())
                 val hearthParams = LayoutParams(diameter, diameter)
                 hearthParams.topMargin = toPx(familyNode.centerRelY()) - diameter / 2
                 hearthParams.addRule(CENTER_HORIZONTAL)
@@ -473,11 +473,11 @@ class Diagram : Fragment() {
                 year.textSize = 13f
                 val yearParams = LayoutParams(
                     LayoutParams.MATCH_PARENT, toPx(
-                        graph!!.gedcom.Util.MARRIAGE_HEIGHT.toFloat()
+                        Util.MARRIAGE_HEIGHT.toFloat()
                     )
                 )
                 yearParams.topMargin =
-                    toPx(bond.centerRelY() - graph!!.gedcom.Util.MARRIAGE_HEIGHT / 2)
+                    toPx(bond.centerRelY() - Util.MARRIAGE_HEIGHT / 2)
                 bondLayout.addView(year, yearParams)
             }
             setOnClickListener { view: View? ->
@@ -686,7 +686,7 @@ class Diagram : Fragment() {
         if (personNode.origin != null) parentFam = personNode.origin.spouseFamily
         spouseFam = personNode.spouseFamily
         idPersona = pers!!.id
-        val familyLabels = getFamilyLabels(context, pers, spouseFam)
+        val familyLabels = getFamilyLabels(requireContext(), pers, spouseFam)
         if (idPersona == Global.indi && pers!!.getParentFamilies(Global.gc).size > 1) menu.add(
             0,
             -1,
@@ -699,7 +699,7 @@ class Diagram : Fragment() {
         menu.add(0, 3, 0, R.string.new_relative)
         if (U.containsConnectableIndividuals(pers)) menu.add(0, 4, 0, R.string.link_person)
         menu.add(0, 5, 0, R.string.modify)
-        if (!pers!!.getParentFamilies(Global.gc).isEmpty() || !pers.getSpouseFamilies(Global.gc)
+        if (!pers!!.getParentFamilies(Global.gc).isEmpty() || !pers!!.getSpouseFamilies(Global.gc)
                 .isEmpty()
         ) menu.add(0, 6, 0, R.string.unlink)
         menu.add(0, 7, 0, R.string.delete)
