@@ -5,7 +5,7 @@
 	<item name="tag_bond" type="id"/>
 	<item name="tag_object" type="id"/>
 	<item name="tag_contenitore" type="id"/>
-	<item name="tag_percorso" type="id"/>
+	<item name="tag_path" type="id"/>
 	<item name="tag_uri" type="id"/>
 	<item name="tag_file_type" type="id"/> <!--	0: placeholder, 1: croppable image, 2: not croppable preview (video), 3: file icon -->
 	<item name="tag_famiglia" type="id"/>
