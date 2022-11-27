@@ -53,7 +53,7 @@ class FamiliesFragment : Fragment() {
 
     fun placeFamily(layout: LinearLayout?, wrapper: FamilyWrapper) {
         val familyView =
-            LayoutInflater.from(layout!!.context).inflate(R.layout.piece_family, layout, false)
+            LayoutInflater.from(layout!!.context).inflate(R.layout.families_item, layout, false)
         layout.addView(familyView)
         val infoView = familyView.findViewById<TextView>(R.id.family_info)
         when (order) {
@@ -91,7 +91,7 @@ class FamiliesFragment : Fragment() {
 
     private var selected: Family? = null
     override fun onCreateContextMenu(menu: ContextMenu, view: View, info: ContextMenuInfo?) {
-        selected = Global.gc.getFamily(view.tag as String)
+        selected = Global.gc?.getFamily(view.tag as String)
         if (Global.settings.expert) menu.add(0, 0, 0, R.string.edit_id)
         menu.add(0, 1, 0, R.string.delete)
     }
