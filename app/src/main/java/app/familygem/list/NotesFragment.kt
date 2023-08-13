@@ -81,8 +81,7 @@ class NotesFragment : Fragment() {
     }
 
     override fun onContextItemSelected(item: MenuItem): Boolean {
-        //TODO magic number
-        if (item.itemId == 0) { // Delete
+        if (item.itemId == DELETE_OPTION) { // Delete
             val heads = U.deleteNote(adapter.selectedNote, null)
             U.save(false, *heads)
             activity?.recreate()

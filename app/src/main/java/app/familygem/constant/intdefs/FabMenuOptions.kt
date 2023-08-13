@@ -6,6 +6,14 @@ import androidx.annotation.IntDef
 @Retention(AnnotationRetention.SOURCE)
 annotation class FabMenuOptions
 const val ADDRESS_OPTION = 0
+const val DELETE_OPTION = 0
+const val NOT_EDIT_MODE = 0
+const val EDIT_MODE = 1
+const val MAIN_AUTHOR_OPTION = 1
+const val CROP_OPTION = 2
+const val CHOOSE_OPTION = 3
+const val FAMILY_OPTION = 4
+const val ALL_OTHER_OPTIONS = 5
 const val LINK_ENTITY_OPTION = 100
 const val NEW_REPOSITORY_OPTION = 101
 const val LINK_REPOSITORY_OPTION = 102
