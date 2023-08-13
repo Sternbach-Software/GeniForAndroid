@@ -741,7 +741,7 @@ open class DetailActivity : AppCompatActivity() {
 
         // Custom ActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(false) // hides arrow <-
-        whichMenu = 0
+        whichMenu = NOT_EDIT_MODE
         invalidateOptionsMenu()
         val editBar = layoutInflater.inflate(
             R.layout.barra_edita, LinearLayout(
@@ -798,7 +798,7 @@ open class DetailActivity : AppCompatActivity() {
             View.VISIBLE
         actionBar!!.setDisplayShowCustomEnabled(false) // hides custom bar// nasconde barra personalizzata
         actionBar!!.setDisplayHomeAsUpEnabled(true)
-        whichMenu = 1
+        whichMenu = EDIT_MODE
         invalidateOptionsMenu()
         val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(viewPiece.windowToken, 0)
@@ -810,9 +810,9 @@ open class DetailActivity : AppCompatActivity() {
      * Options menu
      * serves to hide it when entering editor mode
      */
-    var whichMenu = 1
+    var whichMenu = EDIT_MODE
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        if (whichMenu == 1) { // Standard bar menu//Menu standard della barra
+        if (whichMenu == EDIT_MODE) { // Standard bar menu//Menu standard della barra
             if (obj is Submitter && (Global.gc?.header == null || // Non-principal(/main?) author
                         Global.gc!!.header.getSubmitter(Global.gc) == null || Global.gc!!.header.getSubmitter(
                     Global.gc
@@ -840,13 +840,13 @@ open class DetailActivity : AppCompatActivity() {
      */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val id = item.itemId
-        if (id == 1) { // Main author //TODO code smell : magic number
+        if (id == MAIN_AUTHOR_OPTION) { // Main author
             ListOfAuthorsFragment.setMainSubmitter(obj as Submitter?)
-        } else if (id == 2) { // Image: crop
+        } else if (id == CROP_OPTION) { // Image: crop
             cropImage(box)
-        } else if (id == 3) { // Image: choose
+        } else if (id == CHOOSE_OPTION) { // Image: choose
             displayMediaAppList(this, null, 5173, null)
-        } else if (id == 4) { // Family
+        } else if (id == FAMILY_OPTION) { // Family
             val fam = obj as Family?
             if (fam!!.husbandRefs.size + fam.wifeRefs.size + fam.childRefs.size > 0) {
                 AlertDialog.Builder(this).setMessage(R.string.really_delete_family)
@@ -858,7 +858,7 @@ open class DetailActivity : AppCompatActivity() {
                 FamiliesFragment.deleteFamily(fam)
                 onBackPressed()
             }
-        } else if (id == 5) { // All the others
+        } else if (id == ALL_OTHER_OPTIONS) { // All the others
             // todo: confirm deletion of all objects..
             delete()
             U.save(true) // the update of the dates takes place in the Overrides of delete()
@@ -889,7 +889,7 @@ open class DetailActivity : AppCompatActivity() {
         view: View,
         info: ContextMenuInfo
     ) { // info is null
-        if (whichMenu != 0) { // If we are in edit mode show the editor menus
+        if (whichMenu != NOT_EDIT_MODE) { // If we are in edit mode show the editor menus
             pieceView = view
             pieceObject = view.getTag(R.id.tag_object)
             if (pieceObject is Person) {
@@ -987,7 +987,8 @@ open class DetailActivity : AppCompatActivity() {
                 )
                 return true
             }
-            1 -> try {
+            1 -> try { /*TODO I believe each of these cases are magic numbers, 
+                       but I don't understand this onContextItemSelected function enough to know what to name the constants.*/
                 obj!!.javaClass.getMethod("set$pieceObject", String::class.java)
                     .invoke(obj, null as Any?)
             } catch (e: Exception) {
